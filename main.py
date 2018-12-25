@@ -80,14 +80,17 @@ def get_average(list):
         summ += elem
     return summ/len(list)
 
+
 def get_error(max_elem, average):
     return max_elem - average
+
 
 def get_percent(error, average):
     return error * 100 / average
 
 aver_begin = get_average(y_begin)
 aver_end = get_average(y_end)
+
 
 def get_sigma(value_list):
     sigma = 0.
@@ -114,6 +117,7 @@ def get_aver_and_percent(aver_list):
 A_sys_aver, A_sys_percent = get_aver_and_percent([aver_begin, aver_end])
 print(A_sys_aver)
 print(A_sys_percent)
+
 
 def approximate(apx, x, y, windows, width):
     work_array = []

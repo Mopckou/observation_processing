@@ -4,7 +4,7 @@ import logging
 import logging.handlers
 
 
-APP_NAME = 'Chat app'
+APP_NAME = 'LOG'
 LOGGER = logging.getLogger(APP_NAME)
 LOGGER.setLevel(logging.DEBUG)
 LOG_LEVEL = {
@@ -19,7 +19,7 @@ LOG_LEVEL = {
 def setup_logger(verbosity='debug'):
     handler = logging.StreamHandler(stream=sys.stdout)
     formatter = logging.Formatter(
-        r'%(asctime)s [%(name)s] %(message)s', "%Y-%m-%d %H:%M:%S")
+        r'%(asctime)s [%(name)s] [%(levelname)s] %(message)s', "%Y-%m-%d %H:%M:%S")
     handler.setFormatter(formatter)
 
     #handler2 = logging.handlers.TimedRotatingFileHandler(APP_NAME, interval=1, when='M', backupCount=3)

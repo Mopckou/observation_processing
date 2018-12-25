@@ -1,7 +1,7 @@
 import copy
 import logging
 
-logger = logging.getLogger('Chat app')
+logger = logging.getLogger('LOG')
 
 
 class TIME:
@@ -195,7 +195,7 @@ class READER:
 
         for num in all_gsh:
             gsh = all_gsh[num]['interpret']
-            count = gsh['count_on_interval'][0]
+            count = gsh['count_on_interval']
 
             if count != 2:
                 continue
@@ -222,7 +222,7 @@ class READER:
 
         for num in all_gsh:
             gsh = all_gsh[num]['interpret']
-            count = gsh['count_on_interval'][0]
+            count = gsh['count_on_interval']
 
             if count != 2:
                 continue
@@ -290,17 +290,15 @@ class INTERPRETER:
     def count_on_interval(array):  # подсчет непрерывных единичных интервалов
         flag = False
         count = 0
-        m = []
         for num in range(0, len(array)):
             #print(num, array[num])
             if array[num] == 1:
                 if not flag:
                     count += 1
                     flag = True
-                    m.append(num)
             elif array[num] == 0:
                 flag = False
-        return count, m
+        return count
 
     def get_interpreted_array(self):
         count = self.__get_count()
@@ -315,7 +313,7 @@ class INTERPRETER:
         interpreted_array = self.filter(interpreted_array)
         logger.info('Массив отфлитрованный %s' % interpreted_array)
 
-        logger.info('Непрерывных интервалов = %s %s' % self.count_on_interval(interpreted_array))
+        logger.info('Непрерывных интервалов = %s' % self.count_on_interval(interpreted_array))
 
         return interpreted_array
 
