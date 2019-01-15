@@ -1,4 +1,4 @@
-of = open('file_obs92cm_cifra_version3.txt')
+of = open('file_obs92cm.txt')
 
 f = of.read()
 
@@ -29,7 +29,7 @@ for num, v in enumerate(new_obs[:-1]):  # удаляем элементы с о�
 
 print(len(new_obs2))
 
-o = open('file_obs92cm_cifra_clean2.txt', 'w')
+o = open('file_obs92c_new.txt', 'w')
 y_old = 0
 for i in new_obs2:  # записываем значения в файл
     vlist = i.split()

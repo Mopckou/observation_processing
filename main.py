@@ -5,7 +5,7 @@ import errno
 import matplotlib.pyplot as plt
 from scipy import stats
 import numpy as np
-from src.approximater import SVD_APPROXIMATE
+from src.approximater import ApproximationMethod
 from src.function import FUNCTION
 from configparser import ConfigParser
 
@@ -64,8 +64,58 @@ def clear_data():
 flag_continue = True
 FILE = os.path.join('IN', FILE)
 file = scipy.loadtxt(FILE, dtype=float)
-x = file[:, 0]
-y = file[:, 1]
+
+import matplotlib.pyplot as plt
+
+
+def plot(abscissa, ordinate):
+    x = abscissa
+    y = ordinate
+    plt.scatter(x, y, s=5)
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$f(y)$')
+    plt.title(r'$y=$')
+    plt.grid(True)
+    plt.show()
+
+
+from src.log import setup_logger
+from src.helpers import READER, TIME, DIGITAL
+
+setup_logger()
+file = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
+file2 = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
+file3 = 'out_6_92cm_spectr_20180124_004919_01_05_nomer_1.tmi'  # плохой файл
+file4 = 'IN\out_6_92cm_spectr_20180212_180710_02_02_nomer_3.tmi'
+file5 = 'IN\out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
+file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
+file7 = 'out_6_92cm_spectr_20180309_161910_02_02_nomer_5.tmi'
+reader = READER(file4)
+reader.parse()
+
+reader.cut_observation()
+reader.filter_digital_observation()
+reader.trim_to_seconds()
+
+x = reader.get_array(TIME.T)
+y = reader.get_array(DIGITAL.OBSERVATION_6_K2)
+print(x)
+print(y)
+
+
+# n  = []
+# for i in range(len(a)):
+#     n.append(i)
+#
+# x = a[1:-16]
+# y = c[1:-16]
+# print(x)
+# print(y)
+# print(len(x))
+# print(len(y))
+#x = file[:, 0]
+##y = file[:, 1]
+
 
 x_begin = x[30: 40]
 y_begin = y[30: 40]
@@ -218,7 +268,6 @@ def find_best(all_fits, windows):
 
     for num, fits in enumerate(all_fits):
         for fit in fits:
-            #print(fit['coeff'])
             if is_best(fit, new_fits, all_fits[num + 1:], windows/2):
                 new_fits.append(fit)
 
@@ -250,7 +299,7 @@ max_gshv = []
 
 
 if do_gshv:
-    apx = SVD_APPROXIMATE()
+    apx = ApproximationMethod()
     apx.set_function('right_angled')
     all_gsha = []
     best_fit = []
@@ -262,8 +311,12 @@ if do_gshv:
             #print('x0 - %s, error - %s, coeff - %s, important_section - %s' % (
             #fit['t_nul'], fit['error'], fit['coeff'], fit['important_section']))
             error_percent_with_sys = abs(get_percent(float(fit['coeff'][0]), A_sys_aver) - 100)
-            if abs(float(fit['coeff'][3])) > 0.24 and float(fit['coeff'][0]) > 0.1 and error_percent_with_sys < 20. and fit['error'] is not None and fit['error'] < error_limit_gshv:# and fit['important_section']:
+            # if abs(float(fit['coeff'][3])) > 0.24 and float(fit['coeff'][0]) > 0.1 and error_percent_with_sys < 20. and fit['error'] is not None and fit['error'] < error_limit_gshv:# and fit['important_section']:
+            #     best_fit.append(fit)
+            print(fit['coeff'], fit['t_nul'], fit['error'], fit['width'])
+            if abs(float(fit['coeff'][3])) > 0.24 and float(fit['coeff'][0]) > 0.1 and fit['error'] is not None and fit['error'] < error_limit_gshv:# and fit['important_section']:
                 best_fit.append(fit)
+
         if best_fit:
             best_fit = filter_gauss(best_fit)
         for i in best_fit:
@@ -288,7 +341,7 @@ if do_gshv:
 
 max_gauss = []
 if do_gauss:
-    apx = SVD_APPROXIMATE()
+    apx = ApproximationMethod()
     apx.set_function('gauss')
     all_gauss = []
     best_fit = []
@@ -299,19 +352,33 @@ if do_gauss:
         for fit in work_array:
             #print('x0 - %s, error - %s, coeff - %s, important_section - %s' % (
             #fit['t_nul'], fit['error'], fit['coeff'], fit['important_section']))
-            error_percent_with_sys = abs(get_percent(float(fit['coeff'][0]), A_sys_aver) - 100)
-            if error_percent_with_sys < 16. and float(fit['coeff'][3]) > 0.8 and fit['error'] is not None and fit['error'] < error_limit_gauss:# and fit['important_section']:
+            #error_percent_with_sys = abs(get_percent(float(fit['coeff'][0]), A_sys_aver) - 100)
+            # if fit['t_nul'] == 64348:
+            #     print(error_percent_with_sys)
+            #     input()
+            if fit['error'] is not None and fit['error'] < error_limit_gauss:# and fit['important_section']:
                 best_fit.append(fit)
+                #input()
         #print(len(best_fit))
         if best_fit:
-            best_fit = filter_gauss(best_fit)
+             best_fit = filter_gauss(best_fit)
+        # plt.scatter(x, y, s=5)
         for i in best_fit:
             print(i['coeff'], i['t_nul'], i['error'], i['width'])
+        #     plt.scatter(x, y, s=5)
+        #     Y_new = apx.get_new_segment(i['coeff'][:4], i['x_segment'], i['t_nul'], i['width'])
+        #     plt.plot(i['x_segment'], Y_new)
+        # plt.xlabel(r'$x$')
+        # plt.ylabel(r'$f(y)$')
+        # plt.title(r'$y=$')
+        # plt.grid(True)
+        # plt.show()
         all_gauss.append(best_fit)
         print('____________')
     best_fit = find_best(all_gauss, gauss_windows)
     for i in best_fit:
         print(i['coeff'], i['t_nul'], i['error'], i['width'])
+        #input()
     for i in best_fit:
         Y_new = apx.get_new_segment(i['coeff'][:4], i['x_segment'], i['t_nul'], i['width'])
         i['y_new_segment'] = Y_new
