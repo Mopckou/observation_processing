@@ -126,14 +126,14 @@ class FinderGsh:
             sector_y = self.ordinate[begin:end]
             sector_x = self.abscissa[begin:end]
 
-            sector_average = self.get_average(sector_y)
+            sector_average = INTERPRETER.get_average(sector_y)
 
             new_sector_y = self.__get_new_sector(sector_y, sector_average)  # пересчитанный сектор, с средним значением
             self._append_plot(sector_x, new_sector_y)
 
             averages.append(sector_average)
 
-        _average = self.get_average(averages)
+        _average = INTERPRETER.get_average(averages)
         sigma = self.get_sigma(averages)
         percent = self.get_percent(sigma, _average)
 
@@ -154,7 +154,7 @@ class FinderGsh:
     def get_sigma(array):
         sigma = 0.
         count = len(array)
-        average = FinderGsh.get_average(array)
+        average = INTERPRETER.get_average(array)
 
         for value in array:
             sigma += (value - average) * (value - average)
@@ -168,14 +168,6 @@ class FinderGsh:
             return
 
         return error * 100 / average
-
-    @staticmethod
-    def get_average(array):
-        summary = 0.
-
-        for elem in array:
-            summary += elem
-        return summary / len(array)
 
     def build_graph(self):
         x = self.abscissa

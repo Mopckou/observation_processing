@@ -1,6 +1,7 @@
 import numpy
 import logging
 from src.approximater import ApproximationMethod
+from src.helpers import INTERPRETER
 
 logger = logging.getLogger('LOG')
 
@@ -44,7 +45,7 @@ class FinderGauss:
             fits = self.__fit(width)  # обработка файла на одной ширине
             fits = self.__filter_by_error(fits)  # фильтруются апроксимации с ошибкой большей допустимой
             fits = self.__filter_by_group(fits)  # апроксимации разбиваются по группам и возвращаются лучшие из групп
-
+            #self.__debug_plot(fits)
             fits_by_width.append(fits)  # лучшие апроксимации добавляются в общий массив по всем ширинам
 
         best_fits = self.__find_best_of_the_best(fits_by_width)  # поиск лучших апроксимаций среди всех ширин
@@ -54,7 +55,25 @@ class FinderGauss:
     def handle_fits(self, fits):
         pass
 
+    def __debug_plot(self, fits):
+        plt.scatter(self.abscissa, self.ordinate, s=5)
+        for fit in fits:
+            coefficients = fit.coefficients
+            x_segment = fit.x_segment
+            width = fit.width
+            x_zero = fit.x_zero
+            y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width)
+
+            plt.plot(x_segment, y_new_segment)
+
+        plt.xlabel(r'$x$')
+        plt.ylabel(r'$f(y)$')
+        plt.title(r'$y=$')
+        plt.grid(True)
+        plt.show()
+
     def prepare_plot(self, plot):
+
         for fit in self.fits:
             coefficients = fit.coefficients
             x_segment = fit.x_segment
@@ -85,6 +104,9 @@ class FinderGauss:
             hr.error = fit[4]
             hr.coefficients = fit[:4]
             hr.important_section = fit[6] == 'T'
+            # hr.y_segment_re_calc = self.__approximate.get_new_segment(
+            #     hr.coefficients, hr.x_segment, hr.x_zero, hr.width
+            # )
 
             fits.append(hr)
 
@@ -131,13 +153,21 @@ class FinderGauss:
 
         return filtered
 
-    @staticmethod
-    def __find_best_fit_in_group(group):
+    def __find_best_fit_in_group(self, group):
         best = group[0]
+        best.y_segment_re_calc = self.__approximate.get_new_segment(
+            best.coefficients, best.x_segment, best.x_zero, best.width
+        )
+        amplitude = self.__get_amplitude(best)
 
         for fit in group:
-            if fit.coefficients[3] > best.coefficients[3]:
+            fit.y_segment_re_calc = self.__approximate.get_new_segment(
+                fit.coefficients, fit.x_segment, fit.x_zero, fit.width
+            )
+            #if fit.coefficients[3] > best.coefficients[3]:
+            if self.__get_amplitude(fit) > amplitude:#self.__get_amplitude(best):
                 best = fit
+                amplitude = self.__get_amplitude(fit)
 
         return best
 
@@ -171,6 +201,21 @@ class FinderGauss:
                     return False
 
         return True  # если поиск не удовлетворен, то compared_fit лучший
+
+    def __get_amplitude(self, fit):
+        begin_points = fit.y_segment_re_calc[:10]
+        end_points = fit.y_segment_re_calc[-10:]
+
+        begin_average = INTERPRETER.get_average(begin_points)
+        end_average = INTERPRETER.get_average(end_points)
+        average = INTERPRETER.get_average(
+            [begin_average, end_average]
+        )
+
+        maximum = self.__approximate.func.calc_dot(
+            fit.coefficients, fit.x_zero, fit.x_zero, fit.width
+        )
+        return maximum - average
 
     @staticmethod
     def __is_equally_location(x_zero, new_x_zero, windows):
@@ -217,7 +262,7 @@ if __name__ == '__main__':
     file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
     file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
     file7 = 'out_6_92cm_spectr_20180309_161910_02_02_nomer_5.tmi'
-    reader = READER(file5)
+    reader = READER(file4)
     reader.parse()
 
     reader.cut_observation()
@@ -225,7 +270,7 @@ if __name__ == '__main__':
     reader.trim_to_seconds()
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    y = reader.get_array(DIGITAL.OBSERVATION_6_K2)
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')
     plt.ylabel(r'$f(y)$')
@@ -233,7 +278,8 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 
-    fg = FinderGauss(x, y, 80, 100, 320, 0.8)
+    #fg = FinderGauss(x, y, 80, 100, 300, 0.8)
+    fg = FinderGauss(x, y, 1, 50, 50, 0.03)  # 16cm
     fg.run()
 
     print(fg.get_result(), fg.get_description())

@@ -390,6 +390,14 @@ class INTERPRETER:
     def __get_percent(x, count):
         return 100 * x / count
 
+    @staticmethod
+    def get_average(array):
+        summary = 0.
+
+        for elem in array:
+            summary += elem
+        return summary / len(array)
+
     def __repr__(self):
         s = ''
         elem = self.count_elements(self.array)
@@ -705,7 +713,7 @@ if __name__ == '__main__':
     reader.parse()
 
     reader.cut_observation()
-    reader.filter_digital_observation()
+    #reader.filter_digital_observation()
     reader.trim_to_seconds()
     # parser = GshParser()
     # parser.indent = 4
