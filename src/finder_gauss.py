@@ -44,12 +44,17 @@ class FinderGauss:
         for width in numpy.arange(self.width_begin, self.width_end, self.step):
             fits = self.__fit(width)  # обработка файла на одной ширине
             fits = self.__filter_by_error(fits)  # фильтруются апроксимации с ошибкой большей допустимой
+            #self.__debug_plot(fits)
+            fits = self.__filter_by_amplitude(fits)
+            #self.__debug_plot(fits)
             fits = self.__filter_by_group(fits)  # апроксимации разбиваются по группам и возвращаются лучшие из групп
             #self.__debug_plot(fits)
             fits_by_width.append(fits)  # лучшие апроксимации добавляются в общий массив по всем ширинам
 
+        # for i in fits_by_width:
+        #     self.__debug_plot(i)
         best_fits = self.__find_best_of_the_best(fits_by_width)  # поиск лучших апроксимаций среди всех ширин
-
+        self.__debug_plot(best_fits)
         return best_fits
 
     def handle_fits(self, fits):
@@ -65,7 +70,7 @@ class FinderGauss:
             y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width)
 
             plt.plot(x_segment, y_new_segment)
-
+            print(fit.coefficients, fit.error, fit.amplitude)
         plt.xlabel(r'$x$')
         plt.ylabel(r'$f(y)$')
         plt.title(r'$y=$')
@@ -116,7 +121,7 @@ class FinderGauss:
         filtered = []
 
         for fit in fits:
-            if fit.error is not None and fit.error < self.error_limit and fit.coefficients[3] > 0.03:
+            if fit.error is not None and fit.error < self.error_limit:# and fit.coefficients[3] > 0.03:
                 filtered.append(fit)
         return filtered
 
@@ -153,21 +158,37 @@ class FinderGauss:
 
         return filtered
 
-    def __find_best_fit_in_group(self, group):
-        best = group[0]
-        best.y_segment_re_calc = self.__approximate.get_new_segment(
-            best.coefficients, best.x_segment, best.x_zero, best.width
-        )
-        amplitude = self.__get_amplitude(best)
+    def __filter_by_amplitude(self, fits):
+        filtered= []
+        amplitude = 0.01
 
-        for fit in group:
+        for fit in fits:
             fit.y_segment_re_calc = self.__approximate.get_new_segment(
                 fit.coefficients, fit.x_segment, fit.x_zero, fit.width
             )
-            #if fit.coefficients[3] > best.coefficients[3]:
-            if self.__get_amplitude(fit) > amplitude:#self.__get_amplitude(best):
+            fit.amplitude = self.__get_amplitude(fit)
+
+            if fit.amplitude > amplitude:
+                filtered.append(fit)
+
+        return filtered
+
+    def __find_best_fit_in_group(self, group):
+        best = group[0]
+        # best.y_segment_re_calc = self.__approximate.get_new_segment(
+        #     best.coefficients, best.x_segment, best.x_zero, best.width
+        # )
+        # best.amplitude = self.__get_amplitude(best)
+
+        for fit in group:
+            # fit.y_segment_re_calc = self.__approximate.get_new_segment(
+            #     fit.coefficients, fit.x_segment, fit.x_zero, fit.width
+            # )
+            # #if fit.coefficients[3] > best.coefficients[3]:
+            # fit.amplitude = self.__get_amplitude(fit)
+            if fit.amplitude > best.amplitude:#self.__get_amplitude(best):
                 best = fit
-                amplitude = self.__get_amplitude(fit)
+                #amplitude = self.__get_amplitude(fit)
 
         return best
 
@@ -176,7 +197,7 @@ class FinderGauss:
 
         for num, fits in enumerate(fits_by_width):
             for fit in fits:
-                if self.__is_best(fit, best_of_the_best, fits_by_width, self.windows):
+                if self.__is_best(fit, best_of_the_best, fits_by_width, self.windows/3):
                     best_of_the_best.append(fit)
 
         return best_of_the_best
@@ -243,6 +264,7 @@ class HandlingResult:
         self.coefficients = []
         self.error = None
         self.y_segment_re_calc = []
+        self.amplitude = 0.
 
     def __repr__(self):
         return 'X0: %s; Width: %s; Error: %s, Coefficients: %s' % (
@@ -262,7 +284,7 @@ if __name__ == '__main__':
     file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
     file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
     file7 = 'out_6_92cm_spectr_20180309_161910_02_02_nomer_5.tmi'
-    reader = READER(file4)
+    reader = READER(file5)
     reader.parse()
 
     reader.cut_observation()
@@ -270,7 +292,7 @@ if __name__ == '__main__':
     reader.trim_to_seconds()
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_6_K2)
+    y = reader.get_array(DIGITAL.OBSERVATION_92_K2)
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')
     plt.ylabel(r'$f(y)$')
@@ -278,8 +300,9 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 
-    #fg = FinderGauss(x, y, 80, 100, 300, 0.8)
-    fg = FinderGauss(x, y, 1, 50, 50, 0.03)  # 16cm
+    fg = FinderGauss(x, y, 80, 200, 320, 0.8)
+    #fg = FinderGauss(x, y, 1, 25, 100, 0.03)  # 6cm
+    #fg = FinderGauss(x, y, 1, 100, 140, 0.8)  # 18cm
     fg.run()
 
     print(fg.get_result(), fg.get_description())
@@ -293,7 +316,6 @@ if __name__ == '__main__':
     plt.show()
 
     # 1. Починить разбивку на группы (если все плохие не брать первый)
-    # 2. Починить метод best of the best (фильтрация не по ошибке)
     # 3. Добавить фильтр плохих вариантов с плохими коеффициентами
     # 4. Решить убирать фильрацию по амплитуде, поиграть с условием > 0.03
-    
+    # 5. Подсчет амплитуды сделать в SVD.exe

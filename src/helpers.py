@@ -1,4 +1,5 @@
 import copy
+import random
 import logging
 
 logger = logging.getLogger('LOG')
@@ -264,13 +265,15 @@ class READER:
 
         for num, etalon_value in enumerate(etalon_erray):
             array_value = array[num]
-            if READER.__in(etalon_value, array_value, delta):
+            #if array_value == 0:
+                #new_array.append(random.uniform(last_correct_value - 0.01, last_correct_value + 0.01))
+            elif READER.__in(etalon_value, array_value, delta):
                 new_array.append(array_value)
                 last_correct_value = array_value
             elif last_correct_value is None:  # если в цифре с самого начала зашкаальные значения
                 new_array.append(etalon_value)
             else:
-                new_array.append(last_correct_value)
+                new_array.append(etalon_value)
         return new_array
 
     def filter_digital_observation(self):
