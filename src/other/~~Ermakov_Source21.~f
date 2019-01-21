@@ -42,13 +42,13 @@
            diff = 0.
            m_begin = I
            m_end = I + windows - 1 ! максимальное кол-во эл массива для одной итерации, этот массив есть окно которое двигается по всему массиву наблюдений, двигается с шагом 1
-           t_nul = I + (windows/2.)
+           t_nul = T(I) + (windows/2.)
         !PRINT*, 1
         CALL CALC_MATR_PLANE(F,A,T(m_begin:m_end),windows,t_nul,width)
         !print*, 'ta;', T(m_begin:m_end)
         !print*, A
         CALL SVD(windows,windows,N,A,SIGMA,.TRUE.,U,.TRUE.,V,IERR, WORK)
-        print*, SIGMA
+        !print*, SIGMA
         CALL CALC_COEFF(Y(m_begin:m_end),U,V,SIGMA,C,windows,N,RELEER) ! Y(m_begi34e5a23n:m_end) вырезка окна из массива наблюдений (ось напряжения)
            diff = DIFF_APROX(A, Y(m_begin:m_end), C, windows, N) ! оценка апроксимации
 
@@ -127,7 +127,6 @@
            A(I, 3) = Delta_T(T(I), t_nul) * Delta_T(T(I), t_nul)
            IF (FUNC .EQ. 0) THEN
            A(I, 4) = Right_Angled(T(I), t_nul, width)
-           A(I, 4)
            ELSE
            A(I, 4) = Gauss(T(I), t_nul, width)
            ENDIF
@@ -265,7 +264,7 @@ c
 
         REAL FUNCTION Delta_T(t, t_nul)
         REAL t, t_nul
-             Delta_T = t
+             Delta_T = t - t_nul
         RETURN
         END
         

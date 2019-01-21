@@ -267,7 +267,7 @@ class READER:
             array_value = array[num]
             #if array_value == 0:
                 #new_array.append(random.uniform(last_correct_value - 0.01, last_correct_value + 0.01))
-            elif READER.__in(etalon_value, array_value, delta):
+            if READER.__in(etalon_value, array_value, delta):
                 new_array.append(array_value)
                 last_correct_value = array_value
             elif last_correct_value is None:  # если в цифре с самого начала зашкаальные значения

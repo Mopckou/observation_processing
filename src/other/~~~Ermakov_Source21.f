@@ -1,6 +1,7 @@
         program aprox
         REAL A, U, V, SIGMA, WORK, C, RELEER, SIGMA1, TAU, Y, T
-        REAL Delta_T, t_nul, width, DIFF_APROX
+        REAL Delta_T, t_nul, width, DIFF_APROX, AMPLITUDE
+        REAL AMP, GET_AVERAGE
         INTEGER I, IERR, J, M, N, NM, m_begin, m_end, M_OBSH, windows
         INTEGER NAll, F ! количество всех точек в файле
         LOGICAL IMPORTANT_SECTION, FLAG
@@ -42,7 +43,7 @@
            diff = 0.
            m_begin = I
            m_end = I + windows - 1 ! максимальное кол-во эл массива для одной итерации, этот массив есть окно которое двигается по всему массиву наблюдений, двигается с шагом 1
-           t_nul = T(I) + (T(I + windows) - T(I))/2.
+           t_nul = T(I) + (windows/2.)
         !PRINT*, 1
         CALL CALC_MATR_PLANE(F,A,T(m_begin:m_end),windows,t_nul,width)
         !print*, 'ta;', T(m_begin:m_end)
@@ -52,11 +53,11 @@
         CALL CALC_COEFF(Y(m_begin:m_end),U,V,SIGMA,C,windows,N,RELEER) ! Y(m_begi34e5a23n:m_end) вырезка окна из массива наблюдений (ось напряжения)
            diff = DIFF_APROX(A, Y(m_begin:m_end), C, windows, N) ! оценка апроксимации
 
-           FLAG = .True.!IMPORTANT_SECTION(Y(m_begin:m_end), windows, 10, 1)
+           !FLAG = .True.!IMPORTANT_SECTION(Y(m_begin:m_end), windows, 10, 1)
+           AMP = AMPLITUDE(A,Y(m_begin:m_end),C,windows,N,t_nul,width)
 
-           PRINT*, C, diff, t_nul, FLAG
+           PRINT*, C, diff, t_nul, AMP
 21      CONTINUE
-
         !CALL ANALIZE_WORK_ARRAY(WORK_ARRAY, SIZE(WIDTH_ARRAY), M)!,  )
         DEALLOCATE (A, U, V, WORK, C, SIGMA, Y, T)
         pause
@@ -260,6 +261,41 @@ c
         !PRINT*, C
         RETURN
         END
+
+        REAL FUNCTION AMPLITUDE(A, Y, C, M, N, t_nul, width)
+        INTEGER I, J, M, N
+        REAL A(M, N), Y(M), C(N), Y_NEW(M), POINT, T, t_nul, width
+        REAL BEGIN_AVERAGE, END_AVERAGE, GET_AVERAGE, MAX, Gauss
+
+        DO 70 I = 1, M
+           POINT = 0.
+           DO 71 J = 1, N
+              POINT = POINT + C(J) * A(I, J)
+71         CONTINUE
+           Y_NEW(I) = POINT
+70      CONTINUE
+        !PRINT*, 'LOL'
+        BEGIN_AVERAGE = GET_AVERAGE(Y_NEW(:10), 10)
+        END_AVERAGE = GET_AVERAGE(Y_NEW(M-10+1:), 10)
+        !PRINT*, 'LOL@'
+        
+        MAX = C(1) + C(4) * Gauss(t_nul, t_nul, width)
+        AMPLITUDE = MAX - ((BEGIN_AVERAGE + END_AVERAGE)/2.)
+        return
+        end
+        
+        REAL FUNCTION GET_AVERAGE(MASS, N)
+        INTEGER I, N
+        REAL MASS(N), SUMM
+
+        SUMM = 0.
+        DO 72 I = 1, N
+        SUMM = SUMM + MASS(I)
+72      CONTINUE
+
+        GET_AVERAGE = SUMM / N
+        return
+        end
         
 
         REAL FUNCTION Delta_T(t, t_nul)
@@ -278,29 +314,19 @@ c
         RETURN
         END
         
-        !REAL FUNCTION Gauss(t, t_nul, width)
-        !REAL t, t_nul, width
-        !REAL (kind=8) PI, x, Lambda, coeff
-        !PI = ACOS(-1._8)
-        !coeff = 1/(width*SQRT(2*PI))
-        !x = Lambda(t, t_nul, width)
-        !Gauss = coeff * exp(x)
-        !RETURN
-        !END
-        
         REAL FUNCTION Gauss(t, t_nul, width)
         REAL t, t_nul, width
         REAL (kind=8) PI, x, Lambda, coeff
         PI = ACOS(-1._8)
         coeff = 1/(width*SQRT(2*PI))
         x = Lambda(t, t_nul, width)
-        Gauss =  exp(x)
+        Gauss = coeff * exp(x)
         RETURN
         END
         
         REAL FUNCTION Lambda(t, t_nul, width)
         REAL t, t_nul, width
-        Lambda = -(t-t_nul)*(t-t_nul)/(width*width)
+        Lambda = -(t-t_nul)*(t-t_nul)/100.*width*width
         RETURN
         END
         
