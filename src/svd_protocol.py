@@ -2,7 +2,7 @@ import time
 import subprocess
 import os
 
-path_svd = "other\~~Ermakov_Source21.exe"
+path_svd = "other\Ermakov.exe"
 abs_path = os.path.join(
     os.path.normpath(os.path.split(__file__)[0]),
     path_svd

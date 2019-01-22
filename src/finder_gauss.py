@@ -307,7 +307,7 @@ if __name__ == '__main__':
     plt.title(r'$y=$')
     plt.grid(True)
     plt.show()
-
+# 2.0560904      1.31027931E-02 -3.60823731E-04 -0.76090389       8.4285545       69193.000
     #fg = FinderGauss(x, y, 80, 200, 320, 0.8)
     fg = FinderGauss(x, y, 1, 25, 100, 0.03)  # 6cm
     #fg = FinderGauss(x, y, 1, 100, 140, 0.8)  # 18cm
