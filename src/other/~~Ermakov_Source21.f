@@ -1,6 +1,7 @@
         program aprox
         REAL A, U, V, SIGMA, WORK, C, RELEER, SIGMA1, TAU, Y, T
-        REAL Delta_T, t_nul, width, DIFF_APROX
+        REAL Delta_T, t_nul, width, DIFF_APROX, AMPLITUDE
+        REAL AMP, GET_AVERAGE
         INTEGER I, IERR, J, M, N, NM, m_begin, m_end, M_OBSH, windows
         INTEGER NAll, F ! количество всех точек в файле
         LOGICAL IMPORTANT_SECTION, FLAG
@@ -52,11 +53,11 @@
         CALL CALC_COEFF(Y(m_begin:m_end),U,V,SIGMA,C,windows,N,RELEER) ! Y(m_begi34e5a23n:m_end) вырезка окна из массива наблюдений (ось напряжения)
            diff = DIFF_APROX(A, Y(m_begin:m_end), C, windows, N) ! оценка апроксимации
 
-           FLAG = IMPORTANT_SECTION(Y(m_begin:m_end), windows, 10, 1)
+           !FLAG = .True.!IMPORTANT_SECTION(Y(m_begin:m_end), windows, 10, 1)
+           !AMP = AMPLITUDE(A,Y(m_begin:m_end),C,windows,N,t_nul,width)
 
-           PRINT*, C, diff, t_nul, FLAG
+           PRINT*, C, diff, t_nul, 3!, AMP
 21      CONTINUE
-
         !CALL ANALIZE_WORK_ARRAY(WORK_ARRAY, SIZE(WIDTH_ARRAY), M)!,  )
         DEALLOCATE (A, U, V, WORK, C, SIGMA, Y, T)
         pause
@@ -261,9 +262,10 @@ c
         RETURN
         END
 
-        REAL FUNCTION GET_AMPLITUDE(A, Y, C, M, N)
+        REAL FUNCTION AMPLITUDE(A, Y, C, M, N, t_nul, width)
         INTEGER I, J, M, N
-        REAL A(M, N), Y(M), C(N), Y_NEW(M), POINT, T
+        REAL A(M, N), Y(M), C(N), Y_NEW(M), POINT, T, t_nul, width
+        REAL BEGIN_AVERAGE, END_AVERAGE, GET_AVERAGE, MAX, Gauss
 
         DO 70 I = 1, M
            POINT = 0.
@@ -272,15 +274,19 @@ c
 71         CONTINUE
            Y_NEW(I) = POINT
 70      CONTINUE
-
-
-        DIFF_APROX = SQRT(RSQ)
+        !PRINT*, 'LOL'
+        BEGIN_AVERAGE = GET_AVERAGE(Y_NEW(:10), 10)
+        END_AVERAGE = GET_AVERAGE(Y_NEW(M-10+1:), 10)
+        !PRINT*, 'LOL@'
+        
+        MAX = C(1) + C(4) * Gauss(t_nul, t_nul, width)
+        AMPLITUDE = MAX - ((BEGIN_AVERAGE + END_AVERAGE)/2.)
         return
         end
         
         REAL FUNCTION GET_AVERAGE(MASS, N)
         INTEGER I, N
-        REAL MASS(N)
+        REAL MASS(N), SUMM
 
         SUMM = 0.
         DO 72 I = 1, N

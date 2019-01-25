@@ -260,6 +260,36 @@ c
         !PRINT*, C
         RETURN
         END
+
+        REAL FUNCTION GET_AMPLITUDE(A, Y, C, M, N)
+        INTEGER I, J, M, N
+        REAL A(M, N), Y(M), C(N), Y_NEW(M), POINT, T
+
+        DO 70 I = 1, M
+           POINT = 0.
+           DO 71 J = 1, N
+              POINT = POINT + C(J) * A(I, J)
+71         CONTINUE
+           Y_NEW(I) = POINT
+70      CONTINUE
+
+
+        DIFF_APROX = SQRT(RSQ)
+        return
+        end
+        
+        REAL FUNCTION GET_AVERAGE(MASS, N)
+        INTEGER I, N
+        REAL MASS(N)
+
+        SUMM = 0.
+        DO 72 I = 1, N
+        SUMM = SUMM + MASS(I)
+72      CONTINUE
+
+        GET_AVERAGE = SUMM / N
+        return
+        end
         
 
         REAL FUNCTION Delta_T(t, t_nul)

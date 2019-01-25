@@ -134,7 +134,7 @@ class READER:
 
             interpreter = INTERPRETER(array)
             new_array = interpreter.get_interpreted_array()  # получаем интерпретированный массив
-            marks = interpreter.get_marks(new_array)  # получаем данные по массиву, где начинаются ГША
+            marks = interpreter.get_single_intervals(new_array)  # получаем данные по массиву, где начинаются ГША
             count_on_interval = interpreter.count_on_interval(new_array)  # количество ГША на этом участке
 
             gsh['interpret']['new_array'] = new_array
@@ -468,15 +468,36 @@ class INTERPRETER:
         return interpreted_array
 
     @staticmethod
-    def get_marks(array):
+    def get_single_intervals(array):
         flag = False
         marks = []
         mark = {}
         for num, val in enumerate(array):
-            if val == 1 and not flag:
+            if float(val) == 1. and not flag:
                 mark = {'begin': num}
                 flag = True
-            elif val == 0 and flag:
+            elif float(val) == 0. and flag:
+                mark['end'] = num
+                flag = False
+                mark['count'] = mark['end'] - mark['begin']
+                marks.append(mark)
+
+        if flag:  # если последний элемент == 1
+            mark['end'] = len(array)
+            mark['count'] = mark['end'] - mark['begin']
+            marks.append(mark)
+        return marks
+
+    @staticmethod
+    def get_zero_intervals(array):
+        flag = False
+        marks = []
+        mark = {}
+        for num, val in enumerate(array):
+            if val == 0 and not flag:
+                mark = {'begin': num}
+                flag = True
+            elif val != 0 and flag:
                 mark['end'] = num
                 flag = False
                 mark['count'] = mark['end'] - mark['begin']
@@ -494,12 +515,12 @@ class INTERPRETER:
             massive[num] = value
 
     def filter(self, array):
-        marks = self.get_marks(array)  # получить массив с отметками где начинаются единички и заканчиваются
+        marks = self.get_single_intervals(array)  # получить массив с отметками где начинаются единички и заканчиваются
         logger.debug(marks)
         self.__first_filter(array, marks)  # фильтр для интервалов с длиной 1, 2
         logger.debug(array)
 
-        marks = self.get_marks(array)
+        marks = self.get_single_intervals(array)
         logger.debug(marks)
 
         self.__second_filter(array, marks)  # фильр для длинных интервалов, которые отличаются от всех остальных

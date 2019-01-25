@@ -117,7 +117,7 @@ class FinderGsh:
         self.report[nsl]['sig'] = sig
 
     def __calc(self, array):
-        marks = INTERPRETER.get_marks(array)
+        marks = INTERPRETER.get_single_intervals(array)
 
         averages = []
         for num, val in enumerate(marks):

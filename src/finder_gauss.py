@@ -292,7 +292,7 @@ if __name__ == '__main__':
     file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
     file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
     file7 = 'out_6_92cm_spectr_20180309_161910_02_02_nomer_5.tmi'
-    reader = READER(file4)
+    reader = READER(file5)
     reader.parse()
 
     reader.cut_observation()
@@ -300,7 +300,9 @@ if __name__ == '__main__':
     reader.trim_to_seconds()
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_6_K2)
+    y = reader.get_array(DIGITAL.OBSERVATION_92_K2)
+    print(INTERPRETER.get_zero_intervals(y))
+
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')
     plt.ylabel(r'$f(y)$')
