@@ -282,7 +282,7 @@ class HandlingResult:
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from src.log import setup_logger
-    from src.helpers import READER, TIME, DIGITAL
+    from src.helpers import READER, TIME, DIGITAL, ANALOG
 
     setup_logger()
     file = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
@@ -296,12 +296,52 @@ if __name__ == '__main__':
     reader.parse()
 
     reader.cut_observation()
-    reader.filter_digital_observation()
+    #reader.filter_digital_observation()
     reader.trim_to_seconds()
-
+    #reader.trim_bad_areas()
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_92_K2)
-    print(INTERPRETER.get_zero_intervals(y))
+    y = reader.get_array(DIGITAL.OBSERVATION_18_K2)
+    #print(INTERPRETER.get_zero_intervals(y)
+    # exit()
+    # print(INTERPRETER.get_zero_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_6_K1)
+    # ))
+    # print(INTERPRETER.get_zero_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_6_K2)
+    # ))
+    # print(INTERPRETER.get_zero_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_18_K1)
+    # ))
+    # print(INTERPRETER.get_zero_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_18_K2)
+    # ))
+    # print(INTERPRETER.get_zero_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    # ))
+    # print(INTERPRETER.get_zero_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    # ))
+    #
+    # print('_____________________________________________________________________________')
+    #
+    # print(INTERPRETER.get_equal_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_6_K1)
+    # ))
+    # print(INTERPRETER.get_equal_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_6_K2)
+    # ))
+    # print(INTERPRETER.get_equal_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_18_K1)
+    # ))
+    # print(INTERPRETER.get_equal_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_18_K2)
+    # ))
+    # print(INTERPRETER.get_equal_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    # ))
+    # print(INTERPRETER.get_equal_intervals(
+    #     reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    # ))
 
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')

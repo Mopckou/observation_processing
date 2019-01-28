@@ -277,6 +277,11 @@ class READER:
         return new_array
 
     def filter_digital_observation(self):
+        """
+        Функция корректирует цифровые наблюдения (заменяет ошибочные значения) на основе аналогового наблюдения.
+        Т.к. в аналоговых наблюдениях ошибочных значений нет.
+        :return: 
+        """
         delta = {
             DIGITAL.OBSERVATION_6_K1: 0.5,
             DIGITAL.OBSERVATION_6_K2: 0.5,
@@ -307,6 +312,10 @@ class READER:
             # возвращаемый массив в get_array
 
     def trim_to_seconds(self):
+        """
+        Функция обрезает файлы наблюдений до секунд.
+        :return: 
+        """
         array_with_sec = self.__array_to_seconds(
             self.get_array(TIME.T)
         )
@@ -327,6 +336,92 @@ class READER:
         for v in self.TIME:
             self.TIME[v]['trim_array'] = self.__trim_by_tags(array_with_sec, tags)
             self.TIME[v]['current_array'] = self.TIME[v]['trim_array']
+
+    def trim_bad_areas(self):
+        areas = self.__find_bad_areas()  # найти не корректные участки, которые обычно = 0.
+        tags = self.__convert_areas_to_array_tags(
+            self.get_array(TIME.T), areas
+        )
+
+        for v in self.GSH_H:
+            self.GSH_H[v]['recovered_array'] = self.__trim_by_tags(self.get_array(v), tags)
+            self.GSH_H[v]['current_array'] = self.GSH_H[v]['recovered_array']
+
+        for v in self.GSH_B:
+            self.GSH_B[v]['recovered_array'] = self.__trim_by_tags(self.get_array(v), tags)
+            self.GSH_B[v]['current_array'] = self.GSH_B[v]['recovered_array']
+
+        for v in self.OBSERVATION:
+            self.OBSERVATION[v]['recovered_array'] = self.__trim_by_tags(self.get_array(v), tags)
+            self.OBSERVATION[v]['current_array'] = self.OBSERVATION[v]['recovered_array']
+
+        for v in self.TIME:
+            self.TIME[v]['recovered_array'] = self.__adjust_time_array(self.get_array(v), tags)
+            self.TIME[v]['current_array'] = self.TIME[v]['recovered_array']  # делаем ссылку на корректный объект, который
+            # вызывается  методом get_array
+
+    def __adjust_time_array(self, array, tags):
+        recovered_array = self.__trim_by_tags(array, tags)
+        count = len(recovered_array)
+
+        return array[:count]
+
+    def __find_bad_areas(self):
+        areas_by_observation = {}
+
+        for value in self.OBSERVATION:  # цикл по всем цифровым наблюдениям
+
+            if value not in DIGITAL.__dict__.values():  # ищем иммено цифровое наблюдение
+                continue
+
+            key = self.__get_key_name(DIGITAL.__dict__, value)  # получаем имя наблюдения, например: OBSERVATION_6_K1
+            logger.info('Обрабатывается наблюдение - %s' % key)
+            logger.debug('Value - %s, Key - %s' % (value, key))
+
+            digital_intervals = INTERPRETER.get_equal_intervals(
+                self.get_array(DIGITAL.__dict__[key])
+            )
+            logger.debug('Одинаковые интервалы у цифры: %s' % digital_intervals)
+
+            analog_intervals = INTERPRETER.get_equal_intervals(
+                self.get_array(ANALOG.__dict__[key])
+            )
+            logger.debug('Одинаковые интервалы у аналога: %s' % analog_intervals)
+
+            identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals)
+            logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_intervals)
+
+            areas_by_observation[key] = identical_intervals
+
+        return self.__find_equal_areas_by_observations(areas_by_observation)
+
+    def __find_equal_areas_by_observations(self, areas_by_observations):
+        founded_intervals = []
+
+        for observation in areas_by_observations:
+            for other_observation in areas_by_observations:
+
+                if observation == other_observation:
+                    continue
+
+                area = areas_by_observations[observation]
+                other_area = areas_by_observations[other_observation]
+
+                identical_intervals = self.__get_identical_intervals(area, other_area)
+
+                founded_intervals = self.__update(founded_intervals, identical_intervals)
+
+        logger.debug('Интервалы для удаления: %s' % founded_intervals)
+        return founded_intervals
+
+    @staticmethod
+    def __update(massive, array):
+
+        for value in array:
+            if value not in massive:
+                massive.append(value)
+
+        return massive
 
     @staticmethod
     def __trim_by_tags(array, tag_array):
@@ -352,6 +447,24 @@ class READER:
 
         return new_array
 
+    def __convert_areas_to_array_tags(self, array, areas):
+        tags = [True for i in array]
+
+        for area in areas:
+            begin = area['begin']
+            end = area['end']
+            tags = self.__mark_an_area(begin, end, tags)
+
+        return tags
+
+    @staticmethod
+    def __mark_an_area(begin, end, tags):
+        for i in range(begin, end + 1):
+            tags[i] = False
+
+        return tags
+
+
     @staticmethod
     def __array_to_seconds(array):
         new_array = copy.deepcopy(array)
@@ -370,6 +483,21 @@ class READER:
         for key, value in from_dict.items():
             if value == needed_value:
                 return key
+
+    def __get_identical_intervals(self, intervals, other_intervals):
+        identical_intervals = []
+
+        for interval in intervals:
+            for other_interval in other_intervals:
+
+                if self.__interval_is_identical(interval, other_interval):
+                    identical_intervals.append(other_interval)
+
+        return identical_intervals
+
+    @staticmethod
+    def __interval_is_identical(interval, other_interval):
+        return interval['begin'] == other_interval['begin'] and interval['end'] == other_interval['end']
 
 
 class INTERPRETER:
@@ -506,6 +634,37 @@ class INTERPRETER:
         if flag:  # если последний элемент == 1
             mark['end'] = len(array)
             mark['count'] = mark['end'] - mark['begin']
+            marks.append(mark)
+        return marks
+
+    @staticmethod
+    def get_equal_intervals(array):
+        """
+        Метод возвращает непрерывные интервалы массива, которые имеют одинаковое значение внутри одного интервала.
+        :param array: 
+        :return: 
+        """
+        flag = False
+        marks = []
+        mark = {}
+        for num, val in enumerate(array[:-1]):
+            if val == array[num + 1] and not flag:
+                mark = {
+                    'value': val,
+                    'begin': num
+                }
+                flag = True
+            elif val == array[num + 1] and flag:
+                pass
+            elif val != array[num + 1] and flag:
+                mark['end'] = num
+                flag = False
+                mark['count'] = mark['end'] - mark['begin'] + 1  # колличество одинаковых точек (+1 т.к. включительно)
+                marks.append(mark)
+
+        if flag:  # если последний элемент == 1
+            mark['end'] = len(array) - 1
+            mark['count'] = mark['end'] - mark['begin'] + 1
             marks.append(mark)
         return marks
 
@@ -737,8 +896,10 @@ if __name__ == '__main__':
     reader.parse()
 
     reader.cut_observation()
-    #reader.filter_digital_observation()
+    reader.filter_digital_observation()
     reader.trim_to_seconds()
+    reader.trim_bad_areas()
+
     # parser = GshParser()
     # parser.indent = 4
     # parser.set_ordinate(reader.get_array(ANALOG.OBSERVATION_18_K1_A))
