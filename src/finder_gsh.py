@@ -121,10 +121,13 @@ class FinderGsh:
 
         averages = []
         for num, val in enumerate(marks):
-            begin = val['begin'] + self.indent
-            end = val['end']# - self.indent
-            sector_y = self.ordinate[begin:end]
-            sector_x = self.abscissa[begin:end]
+            begin = val['begin']
+            end = val['end']
+            sector_y = self.ordinate[begin + self.indent:end]
+            sector_x = self.abscissa[begin + self.indent:end]
+
+            right_wing = self.ordinate[begin + self.indent:end]
+            left_edge = self.ordinate[begin + self.indent:end]
 
             sector_average = INTERPRETER.get_average(sector_y)
 

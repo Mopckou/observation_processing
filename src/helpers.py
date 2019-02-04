@@ -1,4 +1,5 @@
 import copy
+import numpy
 import random
 import logging
 
@@ -366,6 +367,13 @@ class READER:
 
         return array[:count]
 
+    @staticmethod
+    def __meaningful_data(array):
+        acceptable_minimum = 0.1
+        dispersion = numpy.var(array, ddof=1)
+
+        return dispersion > acceptable_minimum
+
     def __find_bad_areas(self):
         areas_by_observation = {}
 
@@ -378,17 +386,19 @@ class READER:
             logger.info('Обрабатывается наблюдение - %s' % key)
             logger.debug('Value - %s, Key - %s' % (value, key))
 
-            digital_intervals = INTERPRETER.get_equal_intervals(
-                self.get_array(DIGITAL.__dict__[key])
-            )
+            digital_array = self.get_array(DIGITAL.__dict__[key])
+            analog_array = self.get_array(ANALOG.__dict__[key])
+
+            if not self.__meaningful_data(digital_array) or not self.__meaningful_data(analog_array):
+                continue
+
+            digital_intervals = INTERPRETER.get_equal_intervals(digital_array)
             logger.debug('Одинаковые интервалы у цифры: %s' % digital_intervals)
 
-            analog_intervals = INTERPRETER.get_equal_intervals(
-                self.get_array(ANALOG.__dict__[key])
-            )
+            analog_intervals = INTERPRETER.get_equal_intervals(analog_array)
             logger.debug('Одинаковые интервалы у аналога: %s' % analog_intervals)
 
-            identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals)
+            identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals, key, True)
             logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_intervals)
 
             areas_by_observation[key] = identical_intervals
@@ -410,18 +420,24 @@ class READER:
                 identical_intervals = self.__get_identical_intervals(area, other_area)
 
                 founded_intervals = self.__update(founded_intervals, identical_intervals)
-
+        for i in founded_intervals:
+            print(i)
         logger.debug('Интервалы для удаления: %s' % founded_intervals)
         return founded_intervals
 
-    @staticmethod
-    def __update(massive, array):
+    def __update(self, massive, array):
 
         for value in array:
-            if value not in massive:
+            if not self.__area_is_exists(massive, value):
                 massive.append(value)
 
         return massive
+
+    def __area_is_exists(self, massive, area):
+        for other_area in massive:
+            if self.__interval_is_identical(area, other_area):
+                return True
+        return False
 
     @staticmethod
     def __trim_by_tags(array, tag_array):
@@ -464,7 +480,6 @@ class READER:
 
         return tags
 
-
     @staticmethod
     def __array_to_seconds(array):
         new_array = copy.deepcopy(array)
@@ -484,13 +499,15 @@ class READER:
             if value == needed_value:
                 return key
 
-    def __get_identical_intervals(self, intervals, other_intervals):
+    def __get_identical_intervals(self, intervals, other_intervals, key=None, flag=False):
         identical_intervals = []
 
         for interval in intervals:
             for other_interval in other_intervals:
 
                 if self.__interval_is_identical(interval, other_interval):
+                    if flag:
+                        other_interval['observation'] = key
                     identical_intervals.append(other_interval)
 
         return identical_intervals
@@ -886,12 +903,9 @@ if __name__ == '__main__':
     from src.finder_gsh import FinderGsh
     setup_logger()
     file = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
-    file2 = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
-    file3 = 'out_6_92cm_spectr_20180124_004919_01_05_nomer_1.tmi'  # плохой файл
     file4 = 'out_6_92cm_spectr_20180212_180710_02_02_nomer_3.tmi'
     file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
     file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
-    file7 = 'out_6_92cm_spectr_20180309_161910_02_02_nomer_5.tmi'
     reader = READER(file4)
     reader.parse()
 
@@ -899,6 +913,16 @@ if __name__ == '__main__':
     reader.filter_digital_observation()
     reader.trim_to_seconds()
     reader.trim_bad_areas()
+    # import numpy
+    #
+    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_6_K1), ddof=1))
+    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_6_K2), ddof=1))
+    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_18_K1), ddof=1))
+    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_18_K2), ddof=1))
+    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_92_K1), ddof=1))
+    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_92_K2), ddof=1))
+    # input()
+    # exit()
 
     # parser = GshParser()
     # parser.indent = 4
@@ -923,10 +947,10 @@ if __name__ == '__main__':
 
     operator.calc_gsha(DIGITAL.OBSERVATION_18_K1)
     operator.calc_gsha(DIGITAL.OBSERVATION_18_K2)
-    plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K1))
+    #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K1))
 
     operator.calc_gsha(DIGITAL.OBSERVATION_92_K1)
-    plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K2))
+    #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K2))
 
     operator.calc_gsha(DIGITAL.OBSERVATION_92_K2)
     exit()
