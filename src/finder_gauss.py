@@ -242,6 +242,9 @@ class FinderGauss:
     def get_description(self):
         return self.__description
 
+    def get_report(self):
+        return self.__report
+
 
 class HandlingResult:
 

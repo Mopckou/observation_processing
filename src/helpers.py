@@ -2,6 +2,7 @@ import copy
 import numpy
 import random
 import logging
+from src.finder_gsh import FinderGsh
 
 logger = logging.getLogger('LOG')
 
@@ -517,6 +518,15 @@ class READER:
         return interval['begin'] == other_interval['begin'] and interval['end'] == other_interval['end']
 
 
+class WRITER:
+
+    def __init__(self, file_name):
+        self.__file = file_name
+
+    def write_result(self):
+        pass
+
+
 class INTERPRETER:
     ON = 1
     OFF = 0
@@ -851,6 +861,10 @@ class OPERATOR:
         },
     }
 
+    def __init__(self):
+        self.__result = False
+        self.__description = ''
+        self.__report = None
     def set_reader(self, reader):
         self.reader = reader
 
@@ -870,12 +884,21 @@ class OPERATOR:
         parser.set_gsh_H(gsh['GSH_H_K2'], 2, self.reader.get_array(gsh['GSH_H_K2']))
 
         parser.run()
-        print(parser.get_description())
-        print(parser.get_result())
-        print(parser.report)
-        parser.build_graph()
-        return parser.get_result(), parser.get_description()
 
+        self.__description = parser.get_description()
+        self.__result = parser.get_result()
+        self.__report = parser.report
+
+        parser.build_graph()
+
+    def get_description(self):
+        return self.__description
+
+    def get_result(self):
+        return self.__result
+
+    def get_resport(self):
+        return self.__report
 
 if __name__ == '__main__':
     # array = [1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1]
