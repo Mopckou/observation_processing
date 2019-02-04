@@ -1,7 +1,7 @@
 import scipy
 import logging
 import matplotlib.pyplot as plt
-from src.helpers import GshB, GshH, ANALOG, DIGITAL, INTERPRETER
+from src.helpers import INTERPRETER, GshB, GshH, DIGITAL, ANALOG, TIME
 
 logger = logging.getLogger('LOG')
 
@@ -214,3 +214,130 @@ class FinderGsh:
 
     def write_result(self):
         pass
+
+
+class OPERATOR:
+    TABLE = {
+        ANALOG.OBSERVATION_6_K1: {
+            'GSH_B_K1': GshB.GSH_B_6_K1,
+            'GSH_B_K2': GshB.GSH_B_6_K2,
+            'GSH_H_K1': GshH.GSH_H_6_K1,
+            'GSH_H_K2': GshH.GSH_H_6_K2
+        },
+
+        ANALOG.OBSERVATION_6_K2: {
+            'GSH_B_K1': GshB.GSH_B_6_K1,
+            'GSH_B_K2': GshB.GSH_B_6_K2,
+            'GSH_H_K1': GshH.GSH_H_6_K1,
+            'GSH_H_K2': GshH.GSH_H_6_K2
+        },
+
+        ANALOG.OBSERVATION_18_K1: {
+            'GSH_B_K1': GshB.GSH_B_18_K1,
+            'GSH_B_K2': GshB.GSH_B_18_K2,
+            'GSH_H_K1': GshH.GSH_H_18_K1,
+            'GSH_H_K2': GshH.GSH_H_18_K2
+        },
+
+        ANALOG.OBSERVATION_18_K2: {
+            'GSH_B_K1': GshB.GSH_B_18_K1,
+            'GSH_B_K2': GshB.GSH_B_18_K2,
+            'GSH_H_K1': GshH.GSH_H_18_K1,
+            'GSH_H_K2': GshH.GSH_H_18_K2
+        },
+
+        ANALOG.OBSERVATION_92_K1: {
+            'GSH_B_K1': GshB.GSH_B_92_K1,
+            'GSH_B_K2': GshB.GSH_B_92_K2,
+            'GSH_H_K1': GshH.GSH_H_92_K1,
+            'GSH_H_K2': GshH.GSH_H_92_K2
+        },
+
+        ANALOG.OBSERVATION_92_K2: {
+            'GSH_B_K1': GshB.GSH_B_92_K1,
+            'GSH_B_K2': GshB.GSH_B_92_K2,
+            'GSH_H_K1': GshH.GSH_H_92_K1,
+            'GSH_H_K2': GshH.GSH_H_92_K2
+        },
+
+        DIGITAL.OBSERVATION_6_K1: {
+            'GSH_B_K1': GshB.GSH_B_6_K1,
+            'GSH_B_K2': GshB.GSH_B_6_K2,
+            'GSH_H_K1': GshH.GSH_H_6_K1,
+            'GSH_H_K2': GshH.GSH_H_6_K2
+        },
+
+        DIGITAL.OBSERVATION_6_K2: {
+            'GSH_B_K1': GshB.GSH_B_6_K1,
+            'GSH_B_K2': GshB.GSH_B_6_K2,
+            'GSH_H_K1': GshH.GSH_H_6_K1,
+            'GSH_H_K2': GshH.GSH_H_6_K2
+        },
+
+        DIGITAL.OBSERVATION_18_K1: {
+            'GSH_B_K1': GshB.GSH_B_18_K1,
+            'GSH_B_K2': GshB.GSH_B_18_K2,
+            'GSH_H_K1': GshH.GSH_H_18_K1,
+            'GSH_H_K2': GshH.GSH_H_18_K2
+        },
+
+        DIGITAL.OBSERVATION_18_K2: {
+            'GSH_B_K1': GshB.GSH_B_18_K1,
+            'GSH_B_K2': GshB.GSH_B_18_K2,
+            'GSH_H_K1': GshH.GSH_H_18_K1,
+            'GSH_H_K2': GshH.GSH_H_18_K2
+        },
+
+        DIGITAL.OBSERVATION_92_K1: {
+            'GSH_B_K1': GshB.GSH_B_92_K1,
+            'GSH_B_K2': GshB.GSH_B_92_K2,
+            'GSH_H_K1': GshH.GSH_H_92_K1,
+            'GSH_H_K2': GshH.GSH_H_92_K2
+        },
+
+        DIGITAL.OBSERVATION_92_K2: {
+            'GSH_B_K1': GshB.GSH_B_92_K1,
+            'GSH_B_K2': GshB.GSH_B_92_K2,
+            'GSH_H_K1': GshH.GSH_H_92_K1,
+            'GSH_H_K2': GshH.GSH_H_92_K2
+        },
+    }
+
+    def __init__(self):
+        self.__result = False
+        self.__description = ''
+        self.__report = None
+    def set_reader(self, reader):
+        self.reader = reader
+
+    def calc_gsha(self, observation):
+        parser = FinderGsh()
+        #parser.indent = 2
+
+        gsh = self.TABLE[observation]
+
+        parser.set_ordinate(self.reader.get_array(observation))
+        parser.set_abscissa(self.reader.get_array(TIME.T))
+
+        parser.set_gsh_B(gsh['GSH_B_K1'], 1, self.reader.get_array(gsh['GSH_B_K1']))
+        parser.set_gsh_B(gsh['GSH_B_K2'], 2, self.reader.get_array(gsh['GSH_B_K2']))
+
+        parser.set_gsh_H(gsh['GSH_H_K1'], 1, self.reader.get_array(gsh['GSH_H_K1']))
+        parser.set_gsh_H(gsh['GSH_H_K2'], 2, self.reader.get_array(gsh['GSH_H_K2']))
+
+        parser.run()
+
+        self.__description = parser.get_description()
+        self.__result = parser.get_result()
+        self.__report = parser.report
+
+        parser.build_graph()
+
+    def get_description(self):
+        return self.__description
+
+    def get_result(self):
+        return self.__result
+
+    def get_resport(self):
+        return self.__report

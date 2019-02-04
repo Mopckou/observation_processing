@@ -2,8 +2,9 @@ import os
 from configparser import ConfigParser
 
 from src.log import setup_logger
+from src.helpers import READER, DIGITAL, ANALOG, TIME
+from src.finder_gsh import OPERATOR
 from src.finder_gauss import FinderGauss
-from src.helpers import READER, INTERPRETER, DIGITAL, ANALOG, OPERATOR, TIME
 
 setup_logger()
 

@@ -2,7 +2,6 @@ import copy
 import numpy
 import random
 import logging
-from src.finder_gsh import FinderGsh
 
 logger = logging.getLogger('LOG')
 
@@ -774,206 +773,81 @@ class INTERPRETER:
         return comparisons
 
 
-class OPERATOR:
-    TABLE = {
-        ANALOG.OBSERVATION_6_K1: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        ANALOG.OBSERVATION_6_K2: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        ANALOG.OBSERVATION_18_K1: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        ANALOG.OBSERVATION_18_K2: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        ANALOG.OBSERVATION_92_K1: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-
-        ANALOG.OBSERVATION_92_K2: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-
-        DIGITAL.OBSERVATION_6_K1: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        DIGITAL.OBSERVATION_6_K2: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        DIGITAL.OBSERVATION_18_K1: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        DIGITAL.OBSERVATION_18_K2: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        DIGITAL.OBSERVATION_92_K1: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-
-        DIGITAL.OBSERVATION_92_K2: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-    }
-
-    def __init__(self):
-        self.__result = False
-        self.__description = ''
-        self.__report = None
-    def set_reader(self, reader):
-        self.reader = reader
-
-    def calc_gsha(self, observation):
-        parser = FinderGsh()
-        #parser.indent = 2
-
-        gsh = self.TABLE[observation]
-
-        parser.set_ordinate(self.reader.get_array(observation))
-        parser.set_abscissa(self.reader.get_array(TIME.T))
-
-        parser.set_gsh_B(gsh['GSH_B_K1'], 1, self.reader.get_array(gsh['GSH_B_K1']))
-        parser.set_gsh_B(gsh['GSH_B_K2'], 2, self.reader.get_array(gsh['GSH_B_K2']))
-
-        parser.set_gsh_H(gsh['GSH_H_K1'], 1, self.reader.get_array(gsh['GSH_H_K1']))
-        parser.set_gsh_H(gsh['GSH_H_K2'], 2, self.reader.get_array(gsh['GSH_H_K2']))
-
-        parser.run()
-
-        self.__description = parser.get_description()
-        self.__result = parser.get_result()
-        self.__report = parser.report
-
-        parser.build_graph()
-
-    def get_description(self):
-        return self.__description
-
-    def get_result(self):
-        return self.__result
-
-    def get_resport(self):
-        return self.__report
-
 if __name__ == '__main__':
+    pass
     # array = [1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1]
     # interpret = INTERPRETER(array)
     # print(interpret.filter(array))
     # a = {1:2, 3:4}
-    # for i in a:
-    #     print(a[i])
+    # # for i in a:
+    # #     print(a[i])
+    # #
+    # #
+    # # exit()
+    # import matplotlib.pyplot as plt
     #
+    # def plot(abscissa, ordinate):
+    #     x = abscissa
+    #     y = ordinate
+    #     plt.scatter(x, y, s=5)
+    #     plt.xlabel(r'$x$')
+    #     plt.ylabel(r'$f(y)$')
+    #     plt.title(r'$y=$')
+    #     plt.grid(True)
+    #     plt.show()
     #
+    # from src.log import setup_logger
+    # from src.finder_gsh import FinderGsh
+    # setup_logger()
+    # file = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
+    # file4 = 'out_6_92cm_spectr_20180212_180710_02_02_nomer_3.tmi'
+    # file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
+    # file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
+    # reader = READER(file4)
+    # reader.parse()
+    #
+    # reader.cut_observation()
+    # reader.filter_digital_observation()
+    # reader.trim_to_seconds()
+    # reader.trim_bad_areas()
+    # # import numpy
+    # #
+    # # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_6_K1), ddof=1))
+    # # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_6_K2), ddof=1))
+    # # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_18_K1), ddof=1))
+    # # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_18_K2), ddof=1))
+    # # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_92_K1), ddof=1))
+    # # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_92_K2), ddof=1))
+    # # input()
+    # # exit()
+    #
+    # # parser = GshParser()
+    # # parser.indent = 4
+    # # parser.set_ordinate(reader.get_array(ANALOG.OBSERVATION_18_K1_A))
+    # # parser.set_abscissa(reader.get_array(TIME.T))
+    # #
+    # # parser.set_gsh_B(GshB.GSH_B_18_K1, 1, reader.get_array(GshB.GSH_B_18_K1))
+    # # parser.set_gsh_B(GshB.GSH_B_18_K2, 2, reader.get_array(GshB.GSH_B_18_K2))
+    # #
+    # # parser.set_gsh_H(GshH.GSH_H_18_K1, 1, reader.get_array(GshH.GSH_H_18_K1))
+    # # parser.set_gsh_H(GshH.GSH_H_18_K2, 2, reader.get_array(GshH.GSH_H_18_K2))
+    # #
+    # # parser.run()
+    # # print(parser.get_description())
+    # # print(parser.get_result())
+    # # print(parser.report)
+    # # parser.build_graph()
+    # operator = OPERATOR()
+    # operator.set_reader(reader)
+    # operator.calc_gsha(DIGITAL.OBSERVATION_6_K1)
+    # operator.calc_gsha(DIGITAL.OBSERVATION_6_K2)
+    #
+    # operator.calc_gsha(DIGITAL.OBSERVATION_18_K1)
+    # operator.calc_gsha(DIGITAL.OBSERVATION_18_K2)
+    # #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K1))
+    #
+    # operator.calc_gsha(DIGITAL.OBSERVATION_92_K1)
+    # #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K2))
+    #
+    # operator.calc_gsha(DIGITAL.OBSERVATION_92_K2)
     # exit()
-    import matplotlib.pyplot as plt
-
-    def plot(abscissa, ordinate):
-        x = abscissa
-        y = ordinate
-        plt.scatter(x, y, s=5)
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$f(y)$')
-        plt.title(r'$y=$')
-        plt.grid(True)
-        plt.show()
-
-    from src.log import setup_logger
-    from src.finder_gsh import FinderGsh
-    setup_logger()
-    file = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
-    file4 = 'out_6_92cm_spectr_20180212_180710_02_02_nomer_3.tmi'
-    file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
-    file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
-    reader = READER(file4)
-    reader.parse()
-
-    reader.cut_observation()
-    reader.filter_digital_observation()
-    reader.trim_to_seconds()
-    reader.trim_bad_areas()
-    # import numpy
-    #
-    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_6_K1), ddof=1))
-    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_6_K2), ddof=1))
-    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_18_K1), ddof=1))
-    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_18_K2), ddof=1))
-    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_92_K1), ddof=1))
-    # print(numpy.var(reader.get_array(DIGITAL.OBSERVATION_92_K2), ddof=1))
-    # input()
-    # exit()
-
-    # parser = GshParser()
-    # parser.indent = 4
-    # parser.set_ordinate(reader.get_array(ANALOG.OBSERVATION_18_K1_A))
-    # parser.set_abscissa(reader.get_array(TIME.T))
-    #
-    # parser.set_gsh_B(GshB.GSH_B_18_K1, 1, reader.get_array(GshB.GSH_B_18_K1))
-    # parser.set_gsh_B(GshB.GSH_B_18_K2, 2, reader.get_array(GshB.GSH_B_18_K2))
-    #
-    # parser.set_gsh_H(GshH.GSH_H_18_K1, 1, reader.get_array(GshH.GSH_H_18_K1))
-    # parser.set_gsh_H(GshH.GSH_H_18_K2, 2, reader.get_array(GshH.GSH_H_18_K2))
-    #
-    # parser.run()
-    # print(parser.get_description())
-    # print(parser.get_result())
-    # print(parser.report)
-    # parser.build_graph()
-    operator = OPERATOR()
-    operator.set_reader(reader)
-    operator.calc_gsha(DIGITAL.OBSERVATION_6_K1)
-    operator.calc_gsha(DIGITAL.OBSERVATION_6_K2)
-
-    operator.calc_gsha(DIGITAL.OBSERVATION_18_K1)
-    operator.calc_gsha(DIGITAL.OBSERVATION_18_K2)
-    #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K1))
-
-    operator.calc_gsha(DIGITAL.OBSERVATION_92_K1)
-    #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K2))
-
-    operator.calc_gsha(DIGITAL.OBSERVATION_92_K2)
-    exit()

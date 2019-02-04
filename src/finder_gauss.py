@@ -1,7 +1,7 @@
 import numpy
 import logging
 from src.approximater import ApproximationMethod
-from src.helpers import INTERPRETER
+#from src.helpers import INTERPRETER
 
 logger = logging.getLogger('LOG')
 
@@ -213,20 +213,20 @@ class FinderGauss:
 
         return True  # если поиск не удовлетворен, то compared_fit лучший
 
-    def __get_amplitude(self, fit):
-        begin_points = fit.y_segment_re_calc[:10]
-        end_points = fit.y_segment_re_calc[-10:]
-
-        begin_average = INTERPRETER.get_average(begin_points)
-        end_average = INTERPRETER.get_average(end_points)
-        average = INTERPRETER.get_average(
-            [begin_average, end_average]
-        )
-
-        maximum = self.__approximate.func.calc_dot(
-            fit.coefficients, fit.x_zero, fit.x_zero, fit.width
-        )
-        return maximum - average
+    # def __get_amplitude(self, fit):
+    #     begin_points = fit.y_segment_re_calc[:10]
+    #     end_points = fit.y_segment_re_calc[-10:]
+    #
+    #     begin_average = INTERPRETER.get_average(begin_points)
+    #     end_average = INTERPRETER.get_average(end_points)
+    #     average = INTERPRETER.get_average(
+    #         [begin_average, end_average]
+    #     )
+    #
+    #     maximum = self.__approximate.func.calc_dot(
+    #         fit.coefficients, fit.x_zero, fit.x_zero, fit.width
+    #     )
+    #     return maximum - average
 
     @staticmethod
     def __is_equally_location(x_zero, new_x_zero, windows):
