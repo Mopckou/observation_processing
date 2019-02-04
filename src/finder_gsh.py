@@ -28,6 +28,7 @@ class FinderGsh:
         self.gsh_B = {}
         self.gsh_H = {}
         self.indent = 2  # отступ от края ГША, чтобы не учитывать время на выход на уровень
+        self.width_edge = 5
 
     def set_gsh_H(self, table, channel, array):
         self.gsh_H[channel] = {
@@ -126,15 +127,28 @@ class FinderGsh:
             sector_y = self.ordinate[begin + self.indent:end]
             sector_x = self.abscissa[begin + self.indent:end]
 
-            right_wing = self.ordinate[begin + self.indent:end]
-            left_edge = self.ordinate[begin + self.indent:end]
+            right_edge_y = self.ordinate[begin - self.width_edge:begin]
+            right_edge_x = self.abscissa[begin - self.width_edge:begin]
+
+            left_edge_y = self.ordinate[end + self.indent:end + self.indent + self.width_edge]
+            left_edge_x = self.abscissa[end + self.indent:end + self.indent + self.width_edge]
 
             sector_average = INTERPRETER.get_average(sector_y)
+            average_right_edge = INTERPRETER.get_average(right_edge_y)
+            average_left_edge = INTERPRETER.get_average(left_edge_y)
+            base = INTERPRETER.get_average([average_right_edge, average_left_edge])
+
+            amplitude = sector_average - base
 
             new_sector_y = self.__get_new_sector(sector_y, sector_average)  # пересчитанный сектор, с средним значением
-            self._append_plot(sector_x, new_sector_y)
+            new_right_edge_y = self.__get_new_sector(right_edge_y, average_right_edge)
+            new_left_edge_y = self.__get_new_sector(left_edge_y, average_left_edge)
 
-            averages.append(sector_average)
+            self._append_plot(sector_x, new_sector_y)
+            self._append_plot(right_edge_x, new_right_edge_y)
+            self._append_plot(left_edge_x, new_left_edge_y)
+
+            averages.append(amplitude)
 
         _average = INTERPRETER.get_average(averages)
         sigma = self.get_sigma(averages)

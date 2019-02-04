@@ -284,8 +284,8 @@ class READER:
         :return: 
         """
         delta = {
-            DIGITAL.OBSERVATION_6_K1: 0.5,
-            DIGITAL.OBSERVATION_6_K2: 0.5,
+            DIGITAL.OBSERVATION_6_K1: 0.2,
+            DIGITAL.OBSERVATION_6_K2: 0.2,
             DIGITAL.OBSERVATION_18_K1: 0.6,
             DIGITAL.OBSERVATION_18_K2: 0.6,
             DIGITAL.OBSERVATION_92_K1: 0.05,

@@ -282,7 +282,7 @@ if __name__ == '__main__':
     reader.trim_bad_areas()
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_18_K2)
+    y = reader.get_array(ANALOG.OBSERVATION_18_K2)
 
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')
