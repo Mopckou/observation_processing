@@ -1,7 +1,7 @@
 import scipy
 import logging
 import matplotlib.pyplot as plt
-from src.helpers import INTERPRETER, GshB, GshH, DIGITAL, ANALOG, TIME
+from src.helpers import GshB, GshH, ANALOG, DIGITAL, INTERPRETER
 
 logger = logging.getLogger('LOG')
 
@@ -28,7 +28,6 @@ class FinderGsh:
         self.gsh_B = {}
         self.gsh_H = {}
         self.indent = 2  # отступ от края ГША, чтобы не учитывать время на выход на уровень
-        self.width_edge = 5
 
     def set_gsh_H(self, table, channel, array):
         self.gsh_H[channel] = {
@@ -127,29 +126,14 @@ class FinderGsh:
             sector_y = self.ordinate[begin + self.indent:end]
             sector_x = self.abscissa[begin + self.indent:end]
 
-            right_edge_y = self.ordinate[begin - self.width_edge:begin]
-            right_edge_x = self.abscissa[begin - self.width_edge:begin]
-
-            left_edge_y = self.ordinate[end + self.indent:end + self.indent + self.width_edge]
-            left_edge_x = self.abscissa[end + self.indent:end + self.indent + self.width_edge]
+            right_wing = self.ordinate[begin + self.indent:end]
             left_edge = self.ordinate[begin + self.indent:end]
 
             sector_average = INTERPRETER.get_average(sector_y)
-            average_right_edge = INTERPRETER.get_average(right_edge_y)
-            average_left_edge = INTERPRETER.get_average(left_edge_y)
-            base = INTERPRETER.get_average([average_right_edge, average_left_edge])
-
-            amplitude = sector_average - base
 
             new_sector_y = self.__get_new_sector(sector_y, sector_average)  # пересчитанный сектор, с средним значением
-            new_right_edge_y = self.__get_new_sector(right_edge_y, average_right_edge)
-            new_left_edge_y = self.__get_new_sector(left_edge_y, average_left_edge)
-
             self._append_plot(sector_x, new_sector_y)
-            self._append_plot(right_edge_x, new_right_edge_y)
-            self._append_plot(left_edge_x, new_left_edge_y)
 
-            averages.append(amplitude)
             averages.append(sector_average)
 
         _average = INTERPRETER.get_average(averages)
@@ -216,132 +200,3 @@ class FinderGsh:
 
     def write_result(self):
         pass
-
-
-class OPERATOR:
-    TABLE = {
-        ANALOG.OBSERVATION_6_K1: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        ANALOG.OBSERVATION_6_K2: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        ANALOG.OBSERVATION_18_K1: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        ANALOG.OBSERVATION_18_K2: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        ANALOG.OBSERVATION_92_K1: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-
-        ANALOG.OBSERVATION_92_K2: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-
-        DIGITAL.OBSERVATION_6_K1: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        DIGITAL.OBSERVATION_6_K2: {
-            'GSH_B_K1': GshB.GSH_B_6_K1,
-            'GSH_B_K2': GshB.GSH_B_6_K2,
-            'GSH_H_K1': GshH.GSH_H_6_K1,
-            'GSH_H_K2': GshH.GSH_H_6_K2
-        },
-
-        DIGITAL.OBSERVATION_18_K1: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        DIGITAL.OBSERVATION_18_K2: {
-            'GSH_B_K1': GshB.GSH_B_18_K1,
-            'GSH_B_K2': GshB.GSH_B_18_K2,
-            'GSH_H_K1': GshH.GSH_H_18_K1,
-            'GSH_H_K2': GshH.GSH_H_18_K2
-        },
-
-        DIGITAL.OBSERVATION_92_K1: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-
-        DIGITAL.OBSERVATION_92_K2: {
-            'GSH_B_K1': GshB.GSH_B_92_K1,
-            'GSH_B_K2': GshB.GSH_B_92_K2,
-            'GSH_H_K1': GshH.GSH_H_92_K1,
-            'GSH_H_K2': GshH.GSH_H_92_K2
-        },
-    }
-
-    def __init__(self):
-        self.__result = False
-        self.__description = ''
-        self.__report = None
-        self.reader = None
-
-    def set_reader(self, reader):
-        self.reader = reader
-
-    def calc_gsha(self, observation):
-        parser = FinderGsh()
-        #parser.indent = 2
-
-        gsh = self.TABLE[observation]
-
-        parser.set_ordinate(self.reader.get_array(observation))
-        parser.set_abscissa(self.reader.get_array(TIME.T))
-
-        parser.set_gsh_B(gsh['GSH_B_K1'], 1, self.reader.get_array(gsh['GSH_B_K1']))
-        parser.set_gsh_B(gsh['GSH_B_K2'], 2, self.reader.get_array(gsh['GSH_B_K2']))
-
-        parser.set_gsh_H(gsh['GSH_H_K1'], 1, self.reader.get_array(gsh['GSH_H_K1']))
-        parser.set_gsh_H(gsh['GSH_H_K2'], 2, self.reader.get_array(gsh['GSH_H_K2']))
-
-        parser.run()
-
-        self.__description = parser.get_description()
-        self.__result = parser.get_result()
-        self.__report = parser.report
-
-        parser.build_graph()
-
-    def get_description(self):
-        return self.__description
-
-    def get_result(self):
-        return self.__result
-
-    def get_resport(self):
-        return self.__report
