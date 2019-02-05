@@ -1,5 +1,6 @@
 import copy
 import numpy
+import scipy
 import random
 import logging
 
@@ -368,7 +369,7 @@ class READER:
         return array[:count]
 
     @staticmethod
-    def __meaningful_data(array):
+    def meaningful_data(array):
         acceptable_minimum = 0.1
         dispersion = numpy.var(array, ddof=1)
 
@@ -389,7 +390,7 @@ class READER:
             digital_array = self.get_array(DIGITAL.__dict__[key])
             analog_array = self.get_array(ANALOG.__dict__[key])
 
-            if not self.__meaningful_data(digital_array) or not self.__meaningful_data(analog_array):
+            if not self.meaningful_data(digital_array) or not self.meaningful_data(analog_array):
                 continue
 
             digital_intervals = INTERPRETER.get_equal_intervals(digital_array)
@@ -499,6 +500,17 @@ class READER:
             if value == needed_value:
                 return key
 
+    def get_name_observation(self, column):
+        key = self.__get_key_name(DIGITAL.__dict__, column)
+
+        if key is not None:
+            return key
+
+        key = self.__get_key_name(ANALOG.__dict__, column)
+
+        if key is not None:
+            return key
+
     def __get_identical_intervals(self, intervals, other_intervals, key=None, flag=False):
         identical_intervals = []
 
@@ -549,11 +561,31 @@ class INTERPRETER:
 
     @staticmethod
     def get_average(array):
-        summary = 0.
+        #summary = 0.
 
-        for elem in array:
-            summary += elem
-        return summary / len(array)
+        # for elem in array:
+        #     summary += elem
+        return sum(array) / len(array)
+
+    @staticmethod
+    def get_sigma(array):
+        sigma = 0.
+        count = len(array)
+        average = INTERPRETER.get_average(array)
+
+        for value in array:
+            sigma += (value - average) * (value - average)
+        sigma = sigma / (count - 1)
+        sigma = scipy.sqrt(sigma)
+        return sigma
+
+
+    @staticmethod
+    def get_percent(error, average):
+        if average == 0.:
+            return
+
+        return error * 100 / average
 
     def __repr__(self):
         s = ''
@@ -832,22 +864,22 @@ if __name__ == '__main__':
     # # parser.set_gsh_H(GshH.GSH_H_18_K1, 1, reader.get_array(GshH.GSH_H_18_K1))
     # # parser.set_gsh_H(GshH.GSH_H_18_K2, 2, reader.get_array(GshH.GSH_H_18_K2))
     # #
-    # # parser.run()
+    # # parser.find_gauss()
     # # print(parser.get_description())
     # # print(parser.get_result())
     # # print(parser.report)
     # # parser.build_graph()
     # operator = OPERATOR()
     # operator.set_reader(reader)
-    # operator.calc_gsha(DIGITAL.OBSERVATION_6_K1)
-    # operator.calc_gsha(DIGITAL.OBSERVATION_6_K2)
+    # operator.find_gsh(DIGITAL.OBSERVATION_6_K1)
+    # operator.find_gsh(DIGITAL.OBSERVATION_6_K2)
     #
-    # operator.calc_gsha(DIGITAL.OBSERVATION_18_K1)
-    # operator.calc_gsha(DIGITAL.OBSERVATION_18_K2)
+    # operator.find_gsh(DIGITAL.OBSERVATION_18_K1)
+    # operator.find_gsh(DIGITAL.OBSERVATION_18_K2)
     # #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K1))
     #
-    # operator.calc_gsha(DIGITAL.OBSERVATION_92_K1)
+    # operator.find_gsh(DIGITAL.OBSERVATION_92_K1)
     # #plot(reader.get_array(TIME.T), reader.get_array(ANALOG.OBSERVATION_92_K2))
     #
-    # operator.calc_gsha(DIGITAL.OBSERVATION_92_K2)
+    # operator.find_gsh(DIGITAL.OBSERVATION_92_K2)
     # exit()

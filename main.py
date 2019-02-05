@@ -3,7 +3,7 @@ from configparser import ConfigParser
 import matplotlib.pyplot as plt
 from src.log import setup_logger
 from src.helpers import READER, DIGITAL, ANALOG, TIME
-from src.finder_gsh import OPERATOR
+from src.finder_gsh import GshOPERATOR
 from src.finder_gauss import FinderGauss
 
 setup_logger()
@@ -21,8 +21,9 @@ reader.parse()
 reader.cut_observation()  # обрезаем лишние участки когда наблюдение не ведется
 reader.filter_digital_observation()  # фильтрация цифровых наблюдений на основе аналогового наблюдения
 reader.trim_to_seconds()  # изначально файл в милисекундах, обрезаем файл до секунд
+reader.trim_bad_areas()  # удаление нулевых участков
 
-operator = OPERATOR()
+operator = GshOPERATOR()
 operator.set_reader(reader)
 
 OBSERVATIONS = [
@@ -45,20 +46,21 @@ SETUP = {
 
 
 for observation in OBSERVATIONS:
-
-    operator.calc_gsha(observation)
-
-    if operator.get_result():
-        operator.get_resport()
-
     x = reader.get_array(TIME.T)
     y = reader.get_array(observation)
-    print(*SETUP[observation])
 
-    finder = FinderGauss(x, y, *SETUP[observation])  # 6cm
-    input()
+    if not reader.meaningful_data(y):
+        print('Файл %s пустой.' % reader.get_name_observation(observation))
+        continue
+
+    operator.find_gsh(observation)
+
+    if operator.get_result():
+        print(operator.get_report())
+
+    finder = FinderGauss(x, y, *SETUP[observation])
     finder.set_plot_manager(plt)
-    finder.run()
+    finder.find_gauss()
 
     if finder.get_result():
-        finder.get_report()
+        print(finder.get_report())

@@ -55,7 +55,7 @@ class PROCESSING:
         converted_list = []
         for num, value in enumerate(coefficients):
             converted_list.append(float(value))
-            
+
         return converted_list
 
     def get_coefficient_list(self, coefficients):

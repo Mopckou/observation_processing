@@ -23,7 +23,7 @@ class FinderGsh:
         self.__description = ''
         self.ordinate = []
         self.abscissa = []
-        self.report = {}
+        self.__report = {}
         self.plots = []
         self.gsh_B = {}
         self.gsh_H = {}
@@ -98,24 +98,24 @@ class FinderGsh:
     def calc_nsh(self, channel):
         nsh = self.NSH[channel]
 
-        self.report[nsh] = {}
+        self.__report[nsh] = {}
         gsh = self.gsh_B[channel]['array']
 
         average, sig = self.__calc(gsh)
 
-        self.report[nsh]['average'] = average
-        self.report[nsh]['sig'] = sig
+        self.__report[nsh]['average'] = average
+        self.__report[nsh]['sig'] = sig
 
     def calc_nsl(self, channel):
         nsl = self.NSL[channel]
 
-        self.report[nsl] = {}
+        self.__report[nsl] = {}
         gsh = self.gsh_H[channel]['array']
 
         average, sig = self.__calc(gsh)
 
-        self.report[nsl]['average'] = average
-        self.report[nsl]['sig'] = sig
+        self.__report[nsl]['average'] = average
+        self.__report[nsl]['sig'] = sig
 
     def __calc(self, array):
         marks = INTERPRETER.get_single_intervals(array)
@@ -151,8 +151,8 @@ class FinderGsh:
             averages.append(amplitude)
 
         _average = INTERPRETER.get_average(averages)
-        sigma = self.get_sigma(averages)
-        percent = self.get_percent(sigma, _average)
+        sigma = INTERPRETER.get_sigma(averages)
+        percent = INTERPRETER.get_percent(sigma, _average)
 
         return _average, percent
 
@@ -166,25 +166,6 @@ class FinderGsh:
         self.plots.append(
             [x, y]
         )
-
-    @staticmethod
-    def get_sigma(array):
-        sigma = 0.
-        count = len(array)
-        average = INTERPRETER.get_average(array)
-
-        for value in array:
-            sigma += (value - average) * (value - average)
-        sigma = sigma / (count - 1)
-        sigma = scipy.sqrt(sigma)
-        return sigma
-
-    @staticmethod
-    def get_percent(error, average):
-        if average == 0.:
-            return
-
-        return error * 100 / average
 
     def build_graph(self):
         x = self.abscissa
@@ -212,11 +193,11 @@ class FinderGsh:
     def get_description(self):
         return self.__description
 
-    def write_result(self):
-        pass
+    def get_report(self):
+        return self.__report
 
 
-class OPERATOR:
+class GshOPERATOR:
     TABLE = {
         ANALOG.OBSERVATION_6_K1: {
             'GSH_B_K1': GshB.GSH_B_6_K1,
@@ -306,13 +287,13 @@ class OPERATOR:
     def __init__(self):
         self.__result = False
         self.__description = ''
-        self.__report = None
+        self.__report = []
         self.reader = None
 
     def set_reader(self, reader):
         self.reader = reader
 
-    def calc_gsha(self, observation):
+    def find_gsh(self, observation):
         parser = FinderGsh()
         #parser.indent = 2
 
@@ -331,7 +312,7 @@ class OPERATOR:
 
         self.__description = parser.get_description()
         self.__result = parser.get_result()
-        self.__report = parser.report
+        self.__report = parser.get_report()
 
         parser.build_graph()
 
@@ -341,5 +322,13 @@ class OPERATOR:
     def get_result(self):
         return self.__result
 
-    def get_resport(self):
+    def get_report(self):
         return self.__report
+
+if __name__ == '__main__':
+
+
+
+    a = [{'count': 0.30215609}, {'count': 0.44846553}, {'count': 0.43828237}, {'count': 0.44720364}, {'count': 0.43806744}]
+
+    print(__get_excess_elements(a))

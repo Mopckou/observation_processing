@@ -1,7 +1,7 @@
 import numpy
 import logging
 from src.approximater import ApproximationMethod
-#from src.helpers import INTERPRETER
+from src.helpers import INTERPRETER
 
 logger = logging.getLogger('LOG')
 
@@ -20,7 +20,7 @@ class FinderGauss:
         self.__approximate = ApproximationMethod()
         self.__approximate.set_function('gauss')
         self.fits = []
-        print(self.step)
+        self.__report = {}
 
     def set_abscissa(self, array):
         self.abscissa = array
@@ -28,7 +28,7 @@ class FinderGauss:
     def set_ordinate(self, array):
         self.ordinate = array
 
-    def run(self):
+    def find_gauss(self):
         self.fits = self.process_observation()
 
         if len(self.fits) == 0:
@@ -59,7 +59,19 @@ class FinderGauss:
         return best_fits
 
     def handle_fits(self, fits):
-        pass
+        amplitude_list = []
+
+        for fit in fits:
+            amplitude_list.append(fit.amplitude)
+
+        average = INTERPRETER.get_average(amplitude_list)
+        sigma = INTERPRETER.get_sigma(amplitude_list)
+        percent = INTERPRETER.get_percent(sigma, average)
+
+        self.__report['average'] = average
+        self.__report['sig'] = percent
+
+        return True
 
     def set_plot_manager(self, plt):
         self.plt = plt
@@ -113,9 +125,6 @@ class FinderGauss:
             hr.error = fit[4]
             hr.coefficients = fit[:4]
             hr.amplitude = fit[6]
-            # hr.y_segment_re_calc = self.__approximate.get_new_segment(
-            #     hr.coefficients, hr.x_segment, hr.x_zero, hr.width
-            # )
 
             fits.append(hr)
 
@@ -125,7 +134,7 @@ class FinderGauss:
         filtered = []
 
         for fit in fits:
-            if fit.error is not None and fit.error < self.error_limit:# and fit.coefficients[3] > 0.03:
+            if fit.error is not None and fit.error < self.error_limit:
                 filtered.append(fit)
         return filtered
 
@@ -212,6 +221,37 @@ class FinderGauss:
                     return False
 
         return True  # если поиск не удовлетворен, то compared_fit лучший
+    
+    def __get_excess_elements(self, marks):
+        for num, value in enumerate(marks):
+            value['comparisons'] = self.__get_comparisons(num, value, marks)  # получить сравнение со всеми эелементами в marks
+        print('Marks с массивом сравнений %s' % marks)
+
+        excess_elements = []
+        for num, val in enumerate(marks):
+            comparisons = val['comparisons']
+            if comparisons != [] and self.__is_superfluous_expression(comparisons):
+                excess_elements.append(marks[num])
+        return excess_elements
+
+    def __is_superfluous_expression(self, comparisons):
+        excess = True
+
+        for value in self, comparisons:
+            if value < 25:
+                excess = False
+
+        return excess
+
+    def __get_comparisons(self, number, mark, marks):
+        comparisons = []
+        count = mark['count']
+        for num, elem in enumerate(marks):
+            elem_count = elem['count']
+            percent = abs(100 - INTERPRETER.get_percent(count, elem_count))
+            if num != number:
+                comparisons.append(percent)
+        return comparisons
 
     # def __get_amplitude(self, fit):
     #     begin_points = fit.y_segment_re_calc[:10]
@@ -276,16 +316,16 @@ if __name__ == '__main__':
     file5 = 'out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi'  # готов
     file6 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
     file7 = 'out_6_92cm_spectr_20180309_161910_02_02_nomer_5.tmi'
-    reader = READER(file4)
+    reader = READER(file5)
     reader.parse()
 
     reader.cut_observation()
     reader.filter_digital_observation()
     reader.trim_to_seconds()
-    #reader.trim_bad_areas()
+    reader.trim_bad_areas()
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_18_K2)
+    y = reader.get_array(DIGITAL.OBSERVATION_92_K1)
 
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')
@@ -294,11 +334,11 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 # 2.0560904      1.31027931E-02 -3.60823731E-04 -0.76090389       8.4285545       69193.000
-    #fg = FinderGauss(x, y, 80, 200, 320, 0.8)
+    fg = FinderGauss(x, y, 80, 200, 320, 0.8)
     #fg = FinderGauss(x, y, 1, 25, 100, 0.03)  # 6cm
-    fg = FinderGauss(x, y, 1, 100, 140, 0.8)  # 18cm
+    #fg = FinderGauss(x, y, 1, 100, 140, 0.8)  # 18cm
     fg.set_plot_manager(plt)
-    fg.run()
+    fg.find_gauss()
 
     print(fg.get_result(), fg.get_description())
 
