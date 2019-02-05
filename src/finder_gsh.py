@@ -132,6 +132,7 @@ class FinderGsh:
 
             left_edge_y = self.ordinate[end + self.indent:end + self.indent + self.width_edge]
             left_edge_x = self.abscissa[end + self.indent:end + self.indent + self.width_edge]
+            left_edge = self.ordinate[begin + self.indent:end]
 
             sector_average = INTERPRETER.get_average(sector_y)
             average_right_edge = INTERPRETER.get_average(right_edge_y)
@@ -149,6 +150,7 @@ class FinderGsh:
             self._append_plot(left_edge_x, new_left_edge_y)
 
             averages.append(amplitude)
+            averages.append(sector_average)
 
         _average = INTERPRETER.get_average(averages)
         sigma = self.get_sigma(averages)
