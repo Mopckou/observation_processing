@@ -53,9 +53,9 @@ class PROCESSING:
     def convert_str_to_float(coefficients):
 
         converted_list = []
-        for value, num in enumerate(coefficients):
+        for num, value in enumerate(coefficients):
             converted_list.append(float(value))
-
+            
         return converted_list
 
     def get_coefficient_list(self, coefficients):
