@@ -307,6 +307,8 @@ class OPERATOR:
         self.__result = False
         self.__description = ''
         self.__report = None
+        self.reader = None
+
     def set_reader(self, reader):
         self.reader = reader
 

@@ -20,6 +20,7 @@ class FinderGauss:
         self.__approximate = ApproximationMethod()
         self.__approximate.set_function('gauss')
         self.fits = []
+        print(self.step)
 
     def set_abscissa(self, array):
         self.abscissa = array
@@ -60,8 +61,11 @@ class FinderGauss:
     def handle_fits(self, fits):
         pass
 
+    def set_plot_manager(self, plt):
+        self.plt = plt
+
     def __debug_plot(self, fits):
-        plt.scatter(self.abscissa, self.ordinate, s=5)
+        self.plt.scatter(self.abscissa, self.ordinate, s=5)
         for fit in fits:
             coefficients = fit.coefficients
             x_segment = fit.x_segment
@@ -69,13 +73,13 @@ class FinderGauss:
             x_zero = fit.x_zero
             y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width)
 
-            plt.plot(x_segment, y_new_segment)
+            self.plt.plot(x_segment, y_new_segment)
             print(fit.coefficients, fit.error, fit.amplitude)
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$f(y)$')
-        plt.title(r'$y=$')
-        plt.grid(True)
-        plt.show()
+        self.plt.xlabel(r'$x$')
+        self.plt.ylabel(r'$f(y)$')
+        self.plt.title(r'$y=$')
+        self.plt.grid(True)
+        self.plt.show()
 
     def prepare_plot(self, plot):
 
@@ -160,15 +164,11 @@ class FinderGauss:
 
     def __filter_by_amplitude(self, fits):
         filtered = []
-        amplitude = 0.01
+        min_amplitude = 0.01
 
         for fit in fits:
-            fit.y_segment_re_calc = self.__approximate.get_new_segment(
-                fit.coefficients, fit.x_segment, fit.x_zero, fit.width
-            )
-            fit.amplitude = self.__get_amplitude(fit)
 
-            if fit.amplitude > amplitude:
+            if fit.amplitude > min_amplitude:
                 filtered.append(fit)
 
         return filtered
@@ -282,10 +282,10 @@ if __name__ == '__main__':
     reader.cut_observation()
     reader.filter_digital_observation()
     reader.trim_to_seconds()
-    reader.trim_bad_areas()
+    #reader.trim_bad_areas()
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(ANALOG.OBSERVATION_18_K2)
+    y = reader.get_array(DIGITAL.OBSERVATION_18_K2)
 
     plt.scatter(x, y, s=5)
     plt.xlabel(r'$x$')
@@ -297,6 +297,7 @@ if __name__ == '__main__':
     #fg = FinderGauss(x, y, 80, 200, 320, 0.8)
     #fg = FinderGauss(x, y, 1, 25, 100, 0.03)  # 6cm
     fg = FinderGauss(x, y, 1, 100, 140, 0.8)  # 18cm
+    fg.set_plot_manager(plt)
     fg.run()
 
     print(fg.get_result(), fg.get_description())

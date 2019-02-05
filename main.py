@@ -1,6 +1,6 @@
 import os
 from configparser import ConfigParser
-
+import matplotlib.pyplot as plt
 from src.log import setup_logger
 from src.helpers import READER, DIGITAL, ANALOG, TIME
 from src.finder_gsh import OPERATOR
@@ -53,8 +53,11 @@ for observation in OBSERVATIONS:
 
     x = reader.get_array(TIME.T)
     y = reader.get_array(observation)
+    print(*SETUP[observation])
 
     finder = FinderGauss(x, y, *SETUP[observation])  # 6cm
+    input()
+    finder.set_plot_manager(plt)
     finder.run()
 
     if finder.get_result():

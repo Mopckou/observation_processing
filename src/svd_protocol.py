@@ -49,18 +49,22 @@ class PROCESSING:
             print(exc)
             print('Не известная ошибка обработки ответа.')
 
-    def convert_str_to_float(self, list):
-        convert_list = []
-        for i in range(len(list[:-1])):
-            convert_list.append(float(list[i]))
-        convert_list.append(list[-1])
-        return convert_list
+    @staticmethod
+    def convert_str_to_float(coefficients):
 
-    def get_coefficient_list(self, coeff):
+        converted_list = []
+        for value, num in enumerate(coefficients):
+            converted_list.append(float(value))
+
+        return converted_list
+
+    def get_coefficient_list(self, coefficients):
         new_coeff_list = []
-        for cf in coeff:
+
+        for cf in coefficients:
             coeff_list = cf.strip()
             new_coeff_list.append(self.convert_str_to_float(coeff_list.split()))
+
         return new_coeff_list
 
     def call_svd(self, inquiry):
