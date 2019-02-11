@@ -55,7 +55,8 @@ class FinderGauss:
         # for i in fits_by_width:
         #     self.__debug_plot(i)
         best_fits = self.__find_best_of_the_best(fits_by_width)  # поиск лучших апроксимаций среди всех ширин
-        self.__debug_plot(best_fits)
+        best_fits = self.__filter_excess_elements(best_fits)  # фильтрация лишних элементов
+        #self.__debug_plot(best_fits)
         return best_fits
 
     def handle_fits(self, fits):
@@ -67,9 +68,25 @@ class FinderGauss:
         average = INTERPRETER.get_average(amplitude_list)
         sigma = INTERPRETER.get_sigma(amplitude_list)
         percent = INTERPRETER.get_percent(sigma, average)
+        self.__report['sour'] = {
+            'average': average,
+            'sig': percent
+        }
 
-        self.__report['average'] = average
-        self.__report['sig'] = percent
+        sys_list = []
+        for fit in fits:
+            sys_list.append(
+                self.__get_sys(fit)
+            )
+
+        sys_average = INTERPRETER.get_average(sys_list)
+        sys_sigma = INTERPRETER.get_sigma(sys_list)
+        sys_percent = INTERPRETER.get_percent(sys_sigma, sys_average)
+
+        self.__report['sys'] = {
+            'average': sys_average,
+            'sig': sys_percent
+        }
 
         return True
 
@@ -196,7 +213,7 @@ class FinderGauss:
 
         for num, fits in enumerate(fits_by_width):
             for fit in fits:
-                if self.__is_best(fit, best_of_the_best, fits_by_width, self.windows/3):
+                if self.__is_best(fit, best_of_the_best, fits_by_width, self.windows/4):
                     best_of_the_best.append(fit)
 
         return best_of_the_best
@@ -221,52 +238,70 @@ class FinderGauss:
                     return False
 
         return True  # если поиск не удовлетворен, то compared_fit лучший
-    
-    def __get_excess_elements(self, marks):
-        for num, value in enumerate(marks):
-            value['comparisons'] = self.__get_comparisons(num, value, marks)  # получить сравнение со всеми эелементами в marks
-        print('Marks с массивом сравнений %s' % marks)
 
-        excess_elements = []
-        for num, val in enumerate(marks):
-            comparisons = val['comparisons']
-            if comparisons != [] and self.__is_superfluous_expression(comparisons):
-                excess_elements.append(marks[num])
-        return excess_elements
+    def __filter_excess_elements(self, fits):
+        array_of_comparisons = []
+        for num, value in enumerate(fits):
+            array_of_comparisons.append(
+                (value, self.__get_comparisons(num, value, fits))
+            )  # получить сравнение со всеми эелементами fits
+        print('Fits с массивом сравнений %s' % array_of_comparisons)
+
+        filtered_elements = []
+        for num, value in enumerate(array_of_comparisons):
+            comparisons = value[1]
+            if comparisons != [] and not self.__is_superfluous_expression(comparisons):
+                filtered_elements.append(value[0])
+
+        return filtered_elements
 
     def __is_superfluous_expression(self, comparisons):
         excess = True
 
-        for value in self, comparisons:
+        for value in comparisons:
             if value < 25:
                 excess = False
 
         return excess
 
-    def __get_comparisons(self, number, mark, marks):
+    def __get_comparisons(self, number, fit, fits):
         comparisons = []
-        count = mark['count']
-        for num, elem in enumerate(marks):
-            elem_count = elem['count']
-            percent = abs(100 - INTERPRETER.get_percent(count, elem_count))
+        amplitude = fit.amplitude
+
+        for num, value in enumerate(fits):
+            other_amplitude = value.amplitude
+            percent = abs(100 - INTERPRETER.get_percent(amplitude, other_amplitude))
             if num != number:
                 comparisons.append(percent)
+
         return comparisons
 
-    # def __get_amplitude(self, fit):
-    #     begin_points = fit.y_segment_re_calc[:10]
-    #     end_points = fit.y_segment_re_calc[-10:]
-    #
-    #     begin_average = INTERPRETER.get_average(begin_points)
-    #     end_average = INTERPRETER.get_average(end_points)
-    #     average = INTERPRETER.get_average(
-    #         [begin_average, end_average]
-    #     )
-    #
-    #     maximum = self.__approximate.func.calc_dot(
-    #         fit.coefficients, fit.x_zero, fit.x_zero, fit.width
-    #     )
-    #     return maximum - average
+    def __get_sys(self, fit):
+        y_new = self.__approximate.get_new_segment(fit.coefficients, fit.x_segment, fit.x_zero, fit.width)
+        begin_points = y_new[:10]
+        end_points = y_new[-10:]
+
+        logger.debug(begin_points)
+        logger.debug(end_points)
+
+        begin_average = INTERPRETER.get_average(begin_points)
+        end_average = INTERPRETER.get_average(end_points)
+
+        logger.debug('begin aver = %s' % begin_average)
+        logger.debug('end aver = %s' % end_average)
+
+        average = INTERPRETER.get_average(
+            [begin_average, end_average]
+        )
+
+        logger.debug('average = %s' % average)
+
+        return average
+        #
+        # maximum = self.__approximate.func.calc_dot(
+        #     fit.coefficients, fit.x_zero, fit.x_zero, fit.width
+        # )
+        # return maximum - average
 
     @staticmethod
     def __is_equally_location(x_zero, new_x_zero, windows):
@@ -309,6 +344,7 @@ if __name__ == '__main__':
     from src.helpers import READER, TIME, DIGITAL, ANALOG
 
     setup_logger()
+    file1 = 'out_6_92cm_spectr_20180309_161910_02_02.tmi'
     file = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
     file2 = 'out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi'
     file3 = 'out_6_92cm_spectr_20180124_004919_01_05_nomer_1.tmi'  # плохой файл
@@ -323,34 +359,58 @@ if __name__ == '__main__':
     reader.filter_digital_observation()
     reader.trim_to_seconds()
     reader.trim_bad_areas()
+    #reader.handle_observation(reader.get_array(ANALOG.OBSERVATION_18_K2))
 
     x = reader.get_array(TIME.T)
-    y = reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    y = reader.get_array(DIGITAL.OBSERVATION_18_K2)
 
     plt.scatter(x, y, s=5)
+    plt.plot([62517], [-0.1])
     plt.xlabel(r'$x$')
     plt.ylabel(r'$f(y)$')
     plt.title(r'$y=$')
     plt.grid(True)
     plt.show()
-# 2.0560904      1.31027931E-02 -3.60823731E-04 -0.76090389       8.4285545       69193.000
-    fg = FinderGauss(x, y, 80, 200, 320, 0.8)
-    #fg = FinderGauss(x, y, 1, 25, 100, 0.03)  # 6cm
-    #fg = FinderGauss(x, y, 1, 100, 140, 0.8)  # 18cm
-    fg.set_plot_manager(plt)
-    fg.find_gauss()
 
-    print(fg.get_result(), fg.get_description())
+    yd6_2 = reader.get_array(DIGITAL.OBSERVATION_6_K2)
+    ya6_2 = reader.get_array(ANALOG.OBSERVATION_6_K2)
 
-    plt.scatter(x, y, s=5)
-    fg.prepare_plot(plt)
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$f(y)$')
-    plt.title(r'$y=$')
-    plt.grid(True)
-    plt.show()
+    yd18_1 = reader.get_array(DIGITAL.OBSERVATION_18_K1)
+    ya18_1 = reader.get_array(ANALOG.OBSERVATION_18_K1)
+
+    yd18_2 = reader.get_array(DIGITAL.OBSERVATION_18_K2)
+    ya18_2 = reader.get_array(ANALOG.OBSERVATION_18_K2)
+
+    yd92_1 = reader.get_array(DIGITAL.OBSERVATION_92_K1)
+    ya92_1 = reader.get_array(ANALOG.OBSERVATION_92_K1)
+
+    yd92_2 = reader.get_array(DIGITAL.OBSERVATION_92_K2)
+    ya92_2 = reader.get_array(ANALOG.OBSERVATION_92_K2)
+
+    a = []
+    for num, value in enumerate(yd18_2):
+        if yd18_2[num] == ya18_2[num]:
+            array1 = yd18_2[num - 5: num + 5 + 1]
+            array2 = yd18_2[num - 5: num + 5 + 1]
+            try:
+                srednee = (array2[5 - 1] + array2[5 + 1]) / 2
+                array2[5] = srednee
+            except:
+                continue
+            var1 = numpy.var(array1)
+            var2 = numpy.var(array2)
+            zamena = var2/var1 < 0.01
+            print(x[num], yd18_2[num], num, var1, var2, zamena)
+    # reader.replace_bad_values()
+    # x = reader.get_array(TIME.T)
+    # y = reader.get_array(DIGITAL.OBSERVATION_6_K2)
+    # plt.scatter(x, y, s=5)
+    # plt = reader.prepare_plot(plt)
+    # plt.xlabel(r'$x$')
+    # plt.ylabel(r'$f(y)$')
+    # plt.title(r'$y=$')
+    # plt.grid(True)
+    # plt.show()
 
     # 1. Починить разбивку на группы (если все плохие не брать первый)
     # 3. Добавить фильтр плохих вариантов с плохими коеффициентами
-    # 4. Решить убирать фильрацию по амплитуде, поиграть с условием > 0.03
-    # 5. Подсчет амплитуды сделать в SVD.exe

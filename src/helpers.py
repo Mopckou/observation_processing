@@ -1,10 +1,14 @@
+import os
 import copy
 import numpy
 import scipy
 import random
+import errno
 import logging
 
 logger = logging.getLogger('LOG')
+
+LOG_DIRECTORY = os.path.join(os.getcwd(), 'OUT')
 
 
 class TIME:
@@ -57,6 +61,7 @@ class READER:
 
         f = self.__read(file)
         self.file = self.__prepare_file(f)
+        self.plots = []
 
     @staticmethod
     def __read(file_name):
@@ -142,6 +147,7 @@ class READER:
             gsh['interpret']['new_array'] = new_array
             gsh['interpret']['marks'] = marks
             gsh['interpret']['count_on_interval'] = count_on_interval
+            #input()
 
     def cut_observation(self):
         self.interpret_gsh(self.GSH_B)
@@ -287,8 +293,8 @@ class READER:
         delta = {
             DIGITAL.OBSERVATION_6_K1: 0.2,
             DIGITAL.OBSERVATION_6_K2: 0.2,
-            DIGITAL.OBSERVATION_18_K1: 0.6,
-            DIGITAL.OBSERVATION_18_K2: 0.6,
+            DIGITAL.OBSERVATION_18_K1: 0.3,
+            DIGITAL.OBSERVATION_18_K2: 0.3,
             DIGITAL.OBSERVATION_92_K1: 0.05,
             DIGITAL.OBSERVATION_92_K2: 0.05
         }
@@ -312,6 +318,20 @@ class READER:
             self.OBSERVATION[value]['filtered_array'] = array
             self.OBSERVATION[value]['current_array'] = self.OBSERVATION[value]['filtered_array']  # меняем ссылку на
             # возвращаемый массив в get_array
+
+    def filter_bad_single_values(self):
+        pass
+
+    def handle_observation(self, array):
+
+        for num, value in enumerate(array[:-3]):
+            first_value = array[num]
+            second_value = array[num + 1]
+            third_value = array[num + 2]
+
+            aver = INTERPRETER.get_average([first_value, third_value])
+            if second_value - aver > 1:
+                array[num + 1] = first_value
 
     def trim_to_seconds(self):
         """
@@ -361,6 +381,59 @@ class READER:
             self.TIME[v]['recovered_array'] = self.__adjust_time_array(self.get_array(v), tags)
             self.TIME[v]['current_array'] = self.TIME[v]['recovered_array']  # делаем ссылку на корректный объект, который
             # вызывается  методом get_array
+
+    def replace_bad_values(self):
+        logger.info('ЗАМЕНА ПЛОХИХ ЗНАЧЕНИЙ!')
+        for value in self.OBSERVATION:
+
+            if value not in DIGITAL.__dict__.values():
+                continue
+
+            key = self.__get_key_name(DIGITAL.__dict__, value)
+            logger.info('Обрабатывается наблюдение - %s' % key)
+            logger.debug('Value - %s, Key - %s' % (value, key))
+
+            array = self.__replace_bad_values(
+                self.get_array(ANALOG.__dict__[key]),
+                self.get_array(DIGITAL.__dict__[key]),
+            )
+            logger.debug('Новый c замененными значениями: %s' % array)
+
+            self.OBSERVATION[value]['replaced_array'] = array
+            self.OBSERVATION[value]['current_array'] = self.OBSERVATION[value]['replaced_array']  # меняем ссылку на
+            # возвращаемый массив в get_array
+
+    def __replace_bad_values(self, reference_array, array):
+        wing = 5  # количество точек на которое делаем отступ от плохой точки, чтобы узнать дисперсию участка
+        minimum = 0.01
+
+        new_array = copy.deepcopy(array)
+
+        for num, value in enumerate(new_array):
+            if reference_array[num] != new_array[num]:
+                continue
+
+            sub_array_1 = new_array[num - wing: num + wing + 1]
+            sub_array_2 = new_array[num - wing: num + wing + 1]
+
+            try:
+                sub_array_2[wing] = (sub_array_2[wing - 1] + sub_array_2[wing + 1]) / 2
+            except:
+                continue
+
+            deviation_1 = numpy.var(sub_array_1)
+            deviation_2 = numpy.var(sub_array_2)
+
+            try:
+                if deviation_2 / deviation_1 < minimum:
+                    new_array[num] = sub_array_2[wing]
+                    self._append_plot([self.get_array(TIME.T)[num: num + 3]], [new_array[num: num + 3]])
+            except:
+                continue
+
+
+
+        return new_array
 
     def __adjust_time_array(self, array, tags):
         recovered_array = self.__trim_by_tags(array, tags)
@@ -528,14 +601,76 @@ class READER:
     def __interval_is_identical(interval, other_interval):
         return interval['begin'] == other_interval['begin'] and interval['end'] == other_interval['end']
 
+    @staticmethod
+    def plot_graph(x, y, name, plot):
+        plot.scatter(x, y, s=5)
+        plot.xlabel(r'$T$')
+        plot.ylabel(r'$V$')
+        plot.title('${0}$'.format(name.replace('_', '-')))
+        plot.grid(True)
+        plot.show()
+
+    def _append_plot(self, x, y):
+        self.plots.append(
+            [x, y]
+        )
+
+    def prepare_plot(self, ploter):
+        for x, y in self.plots:
+            ploter.plot(
+               x, y
+            )
+        return ploter
+
 
 class WRITER:
 
     def __init__(self, file_name):
-        self.__file = file_name
+        self.name = file_name
+        self.nsh_1 = (0., 0.)
+        self.nsl_1 = (0., 0.)
+        self.nsh_2 = (0., 0.)
+        self.nsl_2 = (0., 0.)
+        self.a_sys = (0., 0.)
+        self.a_sour = (0., 0,)
+
 
     def write_result(self):
-        pass
+        tem = '\n'
+        # tem += "#234567810123456782012345678301234567840123456785012345678601234567870123456788012345678901234567100123456711012345671201234567130123456714012345671501234567160\n"
+        # tem += "# Title, ch1     Year MM DD Year.XXX  NSH1_1   sig     NSL1_1   sig     NSH2_1   sig     NSL2_1   sig     A_sys    sig     A_sour   sig  F_sou   g       T_cal=\n"
+        # tem += "#        ch2                          NSH1_2           NSL1_2           NSH2_2           NSL2_2                                          Jy              =T/g,K\n"
+        # tem += "# ==============================================================================================================================================================\n"
+        # tem += "#\n"
+        G1, S1 = round(self.nsh_1[0], 3), round(self.nsh_1[1], 4)
+        G2, S2 = round(self.nsl_1[0], 3), round(self.nsl_1[1], 4)
+        G3, S3 = round(self.nsh_2[0], 3), round(self.nsh_2[1], 4)
+        G4, S4 = round(self.nsl_2[0], 3), round(self.nsl_2[1], 4)
+        A1, S5 = round(self.a_sys[0], 3), round(self.a_sys[1], 4)
+        A2, S6 = round(self.a_sour[0], 3), round(self.a_sour[1], 4)
+        tem += '%s 2018 08 09 0.0       %s     %s     %s      %s     %s      %s     %s      %s     %s       %s     %s     %s    0.0     0.0     0.0' % (
+        self.name, G1, S1, G2, S2, G3, S3, G4, S4, A1, S5, A2, S6)
+        log = self.create_result_file('result', 'result_file')
+
+        fl = open(log, 'a')
+        fl.write("%s\n" % (tem))
+        fl.close()
+
+    def create_result_file(self, type, name):
+        name_folder = '%s' % type
+        name_log = '%s.txt' % name
+        current_log_directory = os.path.join(LOG_DIRECTORY, name_folder)
+        log = os.path.join(current_log_directory, name_log)
+        if not os.path.exists(current_log_directory):
+            self.make_sure_path_exists(current_log_directory)
+        return log
+
+    def make_sure_path_exists(self, path):
+        try:
+            os.makedirs(path)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
 
 
 class INTERPRETER:
@@ -578,7 +713,6 @@ class INTERPRETER:
         sigma = sigma / (count - 1)
         sigma = scipy.sqrt(sigma)
         return sigma
-
 
     @staticmethod
     def get_percent(error, average):
@@ -806,7 +940,24 @@ class INTERPRETER:
 
 
 if __name__ == '__main__':
-    pass
+    a = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    a = a[7-5:7+6]
+    print(a)
+    sred = (a[5-1] + a[5+1]) / 2
+    a[5] = sred
+    print(a, a[5-1], a[5+1])
+
+    import matplotlib.pyplot as plt
+    # a = [50, 48, 46, 55, 52, 55, 49, 50, 51, 55, 47]
+    # a2 = [50, 51, 49, 50, 51, 100, 49, 50, 50, 49, 49]
+    # t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    # print(numpy.var(a2, ddof=1))
+    # plt.scatter(t, a, s=5)
+    # plt.xlabel(r'$x$')
+    # plt.ylabel(r'$f(y)$')
+    # plt.title(r'$y=$')
+    # plt.grid(True)
+    # plt.show()
     # array = [1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1]
     # interpret = INTERPRETER(array)
     # print(interpret.filter(array))
