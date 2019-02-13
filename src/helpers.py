@@ -806,7 +806,9 @@ class INTERPRETER:
 
 
 if __name__ == '__main__':
-    pass
+    a = [50, 51, 52, 44, 61, 100, 54, 49, 46, 57, 59]
+    print(sum(a)/len(a))
+    print(numpy.var(a, ddof=1))
     # array = [1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1]
     # interpret = INTERPRETER(array)
     # print(interpret.filter(array))

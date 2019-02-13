@@ -221,7 +221,7 @@ class FinderGauss:
                     return False
 
         return True  # если поиск не удовлетворен, то compared_fit лучший
-    
+
     def __get_excess_elements(self, marks):
         for num, value in enumerate(marks):
             value['comparisons'] = self.__get_comparisons(num, value, marks)  # получить сравнение со всеми эелементами в marks
