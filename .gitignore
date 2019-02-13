@@ -29,3 +29,5 @@ src/__pycache__/finder_gsh.cpython-36.pyc
 src/__pycache__/helpers.cpython-36.pyc
 src/__pycache__/helpers.cpython-36.pyc
 src/__pycache__/svd_protocol.cpython-36.pyc
+src/__pycache__/__init__.cpython-36.pyc
+*.pyc

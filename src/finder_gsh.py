@@ -103,7 +103,7 @@ class FinderGsh:
 
         average, sig = self.__calc(gsh)
 
-        if abs(sig) > 60:
+        if sig > 60 or sig < 0:
             average, sig = 0.0, 0.0
 
         self.__report[nsh]['average'] = average
@@ -117,7 +117,7 @@ class FinderGsh:
 
         average, sig = self.__calc(gsh)
 
-        if abs(sig) > 60:
+        if sig > 60 or sig < 0:
             average, sig = 0.0, 0.0
 
         self.__report[nsl]['average'] = average
