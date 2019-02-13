@@ -28,7 +28,7 @@ class FinderGsh:
         self.gsh_B = {}
         self.gsh_H = {}
         self.indent = 2  # отступ от края ГША, чтобы не учитывать время на выход на уровень
-        self.width_edge = 5
+        self.width_edge = 4
 
     def set_gsh_H(self, table, channel, array):
         self.gsh_H[channel] = {
@@ -103,6 +103,9 @@ class FinderGsh:
 
         average, sig = self.__calc(gsh)
 
+        if abs(sig) > 60:
+            average, sig = 0.0, 0.0
+
         self.__report[nsh]['average'] = average
         self.__report[nsh]['sig'] = sig
 
@@ -113,6 +116,9 @@ class FinderGsh:
         gsh = self.gsh_H[channel]['array']
 
         average, sig = self.__calc(gsh)
+
+        if abs(sig) > 60:
+            average, sig = 0.0, 0.0
 
         self.__report[nsl]['average'] = average
         self.__report[nsl]['sig'] = sig
@@ -127,8 +133,8 @@ class FinderGsh:
             sector_y = self.ordinate[begin + self.indent:end]
             sector_x = self.abscissa[begin + self.indent:end]
 
-            right_edge_y = self.ordinate[begin - self.width_edge:begin]
-            right_edge_x = self.abscissa[begin - self.width_edge:begin]
+            right_edge_y = self.ordinate[begin - self.width_edge - self.indent:begin - self.indent]
+            right_edge_x = self.abscissa[begin - self.width_edge - self.indent:begin - self.indent]
 
             left_edge_y = self.ordinate[end + self.indent:end + self.indent + self.width_edge]
             left_edge_x = self.abscissa[end + self.indent:end + self.indent + self.width_edge]
@@ -182,6 +188,12 @@ class FinderGsh:
         self.plt.title(r'$y=$')
         self.plt.grid(True)
         self.plt.show()
+
+    def prepare_plot(self):
+        for x, y in self.plots:
+            self.plt.plot(
+               x, y
+            )
 
     def __set_result(self, result, description):
         self.__result = result
@@ -295,7 +307,7 @@ class GshOPERATOR:
 
     def find_gsh(self, observation):
         parser = FinderGsh()
-        #parser.indent = 2
+        parser.indent = 3
 
         gsh = self.TABLE[observation]
 
@@ -314,7 +326,9 @@ class GshOPERATOR:
         self.__result = parser.get_result()
         self.__report = parser.get_report()
 
-        parser.build_graph()
+        #parser.build_graph()
+        parser.prepare_plot()
+
 
     def get_description(self):
         return self.__description
