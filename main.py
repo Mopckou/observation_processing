@@ -1,4 +1,5 @@
 import os
+import datetime
 from configparser import ConfigParser
 import matplotlib.pyplot as plt
 from src.log import setup_logger
@@ -15,10 +16,46 @@ conf.read('Configuration.ini')  # читаем конфигурационный 
 
 FILE = conf.get('FILE', 'file')
 
+def f(val):
+    try:
+        d = datetime.datetime.strptime(val, '%H:%M:%S.%f')
+    except:
+        d = datetime.datetime.strptime('0:0:0.0', '%H:%M:%S.%f')
+
+    return d
+
 reader = READER(FILE)
+# for i in reader.file:
+#     print(i)
+# reader.plot_graph(reader.get_column(0), reader.get_column(13), 'name', plt)
+# x1 = reader.get_column(0)
+# y1 = reader.get_column(13)
+
+reader.file = sorted(reader.file, key=lambda x: (int(x[131]), f(x[100])))
+# x2 = []
+# c = 0
+# for i in reader.get_column(0):
+#     x2.append(c)
+#     c += 1
+# y2 = reader.get_column(13)
+# for i in reader.file:
+#     print(i)
+#print(reader.file[0][100], reader.file[0][131], reader.file[0][13])
+
+
+# print(x1, '\r\n', x2)
+# print(y1, '\r\n', y2)
+# plt.scatter(x2, y2, s=5)
+# plt.xlabel(r'$T$')
+# plt.ylabel(r'$V$')
+# plt.title('${0}$'.format('name'.replace('_', '-')))
+# plt.grid(True)
+# plt.show()
+#reader.plot_graph(reader.get_column(0), reader.get_column(13), 'name1', plt)
 reader.parse()
 
 reader.cut_observation()  # обрезаем лишние участки когда наблюдение не ведется
+input()
 reader.filter_digital_observation()  # фильтрация цифровых наблюдений на основе аналогового наблюдения
 reader.trim_to_seconds()  # изначально файл в милисекундах, обрезаем файл до секунд
 reader.trim_bad_areas()  # удаление нулевых участков

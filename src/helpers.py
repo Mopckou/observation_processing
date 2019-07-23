@@ -91,6 +91,9 @@ class READER:
 
         return array
 
+    def get_file(self):
+        return self.file
+
     def parse(self):
         self.TIME[TIME.T] = {'array': self.__get_column(TIME.T - 1)}
 
@@ -141,8 +144,8 @@ class READER:
 
             interpreter = INTERPRETER(array)
             new_array = interpreter.get_interpreted_array()  # получаем интерпретированный массив
-            marks = interpreter.get_single_intervals(new_array)  # получаем данные по массиву, где начинаются ГША
-            count_on_interval = interpreter.count_on_interval(new_array)  # количество ГША на этом участке
+            marks = interpreter.get_single_intervals(new_array)  # получаем данные по массиву, где начинаются ГШ
+            count_on_interval = interpreter.count_on_interval(new_array)  # количество ГШ на этом участке
 
             gsh['interpret']['new_array'] = new_array
             gsh['interpret']['marks'] = marks
@@ -159,11 +162,15 @@ class READER:
         for v in self.GSH_B:
             logger.info('%s - %s' % (v, self.GSH_B[v]['interpret']['marks']))
 
+        #input()
+        self.__begin_search2(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
+        exit()
+
         end = self.end_search()
         begin = self.begin_search()
 
         logger.info('начало - %s и конец - %s предполагаемого наблюдения' % (begin, end))
-
+        input()
         end = end + 100
         begin = begin - 100
 
@@ -199,6 +206,108 @@ class READER:
                 continue
 
             return self.__dict__[value][column]['array']
+
+    def __begin_search2(self, nsl, nsh, t):
+        # marks = []
+        # for i in range(len(A) - 1):
+        #     marks.append(
+        #         [A[i]['interpret']['marks'], A[i + 1]['interpret']['marks']]
+        #     )
+        #
+        # for i in range(len(B) - 1):
+        #     marks.append(
+        #         [B[i]['interpret']['marks'], B[i + 1]['interpret']['marks']]
+        #     )
+        c = {**nsl, **nsh}
+        n = []
+
+        len_obs = len(t)
+        thermo_straight = [0] * len_obs
+        for num in c:
+            marks = c[num]['interpret']['marks']
+            for k, v in enumerate(marks[:-1]):
+                first_elem = marks[k]
+                second_elem = marks[k + 1]
+                width = second_elem['begin'] - first_elem['begin']
+                n.append(
+                    Area(first_elem['begin'], second_elem['count'], width, len_obs)
+                )
+                #self.__increment_area(thermo_straight, first_elem['begin'], second_elem['begin'])
+
+
+        print(n)
+        groups = []
+
+        for key, val in enumerate(n):
+            res, group = self.__area_group_check(val, groups)
+
+            if res:
+                group.append(val)
+                continue
+
+            if val in n[key + 1:]:
+                groups.append([val])
+
+        print(groups)
+
+        for i in groups:
+            print(len(i), *i)
+
+
+        input()
+
+        # for i in range(len(marks)):
+        #     my_val = marks[i]
+        #
+        #     for val in marks[i:]:
+        #         if not self.__is_location() or not self.__is_equal_length():
+        #             continue
+        #
+        #         if self.__vals_in_group(my_val, val):
+        #             continue
+
+                #  проверяем подходит ли эти элементы к сущестующей группе
+
+                # делаем новую группу
+
+    def __are_there_identical_area(self, area, areas):
+        return area in areas
+
+    def __area_group_check(self, area, groups):
+        for group in groups:
+            if area in group:
+                return True, group
+
+        return False, None
+
+    @staticmethod
+    def __get_a_hot_area(_list, value):
+        begin = _list.index(value)
+
+        end = -1
+        for key in range(begin, len(_list)):
+            if _list[key] != value:
+                break
+
+            end = key
+
+        return begin, end
+
+
+
+    def __increment_area(self, _list, begin, end):
+        [self.__increment_value(_list, index) for index in range(begin, end)]
+
+    @staticmethod
+    def __increment_value(_list, index):
+        _list[index] += 1
+
+    def __is_location(self, subgroup1, subgroup2):
+        elem1 = subgroup1[0]
+        elem2 = subgroup2[0]
+
+        count = len(self.TIME[TIME.T]['array'])
+
 
     def end_search(self):
         end_search_gsh_h, number_gsh_h = self.__end_search(self.GSH_H)
@@ -267,11 +376,11 @@ class READER:
         return new_begin, number
 
     @staticmethod
-    def filter_by_etalon(etalon_erray, array, delta):
+    def filter_by_etalon(etalon_array, array, delta):
         last_correct_value = None
         new_array = []
 
-        for num, etalon_value in enumerate(etalon_erray):
+        for num, etalon_value in enumerate(etalon_array):
             array_value = array[num]
             #if array_value == 0:
                 #new_array.append(random.uniform(last_correct_value - 0.01, last_correct_value + 0.01))
@@ -671,6 +780,45 @@ class WRITER:
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
+
+
+class Mark:
+    begin = None
+    end = None
+    count = None
+
+
+class Area:
+    acceptable_percent_of_location = 5  # допустимый процент расхождения по расположению предполагамеого наблюдения
+    acceptable_fraction_of_width = 1.5  # допустимый процент расхождения ширины предполагамого наблюдения
+
+    def __init__(self, begin, count, width, len_obs):
+        self.begin = begin
+        self.count = count
+        self.width = width
+        self.len_obs = len_obs
+        self.location = self.__get_location()
+        self.fraction = self.__get_fraction()
+
+    def __get_location(self):
+        return (self.begin * 100) / self.len_obs
+
+    def __get_fraction(self):
+        return (self.width * 100) / self.len_obs
+
+    @staticmethod
+    def is_close_location(obj, other):
+        return abs(obj.location - other.location) <= Area.acceptable_percent_of_location
+
+    @staticmethod
+    def is_close_width(obj, other):
+        return abs(obj.fraction - other.fraction) <= Area.acceptable_fraction_of_width
+
+    def __eq__(self, other):
+        return self.is_close_location(self, other) and self.is_close_width(self, other)
+
+    def __str__(self):
+        return 'Area <begin - {}, width - {}, count - {}>'.format(self.begin, self.width, self.count)
 
 
 class INTERPRETER:
