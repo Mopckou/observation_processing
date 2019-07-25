@@ -30,3 +30,5 @@ src/__pycache__/helpers.cpython-36.pyc
 src/__pycache__/helpers.cpython-36.pyc
 src/__pycache__/svd_protocol.cpython-36.pyc
 *.pyc
+*.pyc
+*.xml

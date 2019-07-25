@@ -230,7 +230,7 @@ class READER:
                 second_elem = marks[k + 1]
                 width = second_elem['begin'] - first_elem['begin']
                 n.append(
-                    Area(first_elem['begin'], second_elem['count'], width, len_obs)
+                    Area(first_elem['begin'], first_elem['count'], second_elem['count'], width, len_obs)
                 )
                 #self.__increment_area(thermo_straight, first_elem['begin'], second_elem['begin'])
 
@@ -269,6 +269,16 @@ class READER:
                 #  проверяем подходит ли эти элементы к сущестующей группе
 
                 # делаем новую группу
+
+    def _filter(self, areas):
+        pass
+
+    def _is_equal_pillars(self, obj, other):
+        obj.rigth_pillar
+        other.right_pillar
+
+        obj.left_pillar
+        other.left_pillar
 
     def __are_there_identical_area(self, area, areas):
         return area in areas
@@ -789,12 +799,15 @@ class Mark:
 
 
 class Area:
-    acceptable_percent_of_location = 5  # допустимый процент расхождения по расположению предполагамеого наблюдения
-    acceptable_fraction_of_width = 1.5  # допустимый процент расхождения ширины предполагамого наблюдения
+    acceptable_percent_of_location = 10  # допустимый процент расхождения по расположению предполагамеого наблюдения
+    acceptable_fraction_of_width = 5  # допустимый процент расхождения ширины предполагамого наблюдения
+    acceptable_width_of_pillars = 10  # допустимый процент расхождения ширины одной полоски ГШ
+    acceptable_abs_percent_of_width = 20
 
-    def __init__(self, begin, count, width, len_obs):
+    def __init__(self, begin, count_begin, count_end, width, len_obs):
         self.begin = begin
-        self.count = count
+        self.left_pillar = count_begin
+        self.right_pillar = count_end
         self.width = width
         self.len_obs = len_obs
         self.location = self.__get_location()
@@ -810,15 +823,25 @@ class Area:
     def is_close_location(obj, other):
         return abs(obj.location - other.location) <= Area.acceptable_percent_of_location
 
+    # @staticmethod
+    # def is_close_width(obj, other):
+    #     return abs(obj.fraction - other.fraction) <= Area.acceptable_fraction_of_width
+
     @staticmethod
     def is_close_width(obj, other):
-        return abs(obj.fraction - other.fraction) <= Area.acceptable_fraction_of_width
+        return abs(100 - (obj.width * 100 / other.width)) <= Area.acceptable_abs_percent_of_width
+
+    @staticmethod
+    def is_close_pillars(obj, other):
+        return abs(100 - (obj.right_pillar * 100 / other.right_pillar)) <= Area.acceptable_width_of_pillars and \
+               abs(100 - (obj.left_pillar * 100 / other.left_pillar)) <= Area.acceptable_width_of_pillars
 
     def __eq__(self, other):
-        return self.is_close_location(self, other) and self.is_close_width(self, other)
+        return self.is_close_location(self, other) and self.is_close_width(self, other)# and self.is_close_pillars(self, other)
 
     def __str__(self):
-        return 'Area <begin - {}, width - {}, count - {}>'.format(self.begin, self.width, self.count)
+        return 'Area <begin - {}, width - {}, left pillar = {}, right pillar - {}>'.format(
+            self.begin, self.width, self.left_pillar, self.right_pillar)
 
 
 class INTERPRETER:
@@ -911,6 +934,7 @@ class INTERPRETER:
     def get_interpreted_array(self):
         count = self.__get_count()
         elem = self.count_elements(self.array)
+        #print(elem)
         if len(elem) > 2:
             raise Exception('Элементов в массиве больше двух!')
         self.__get_conformity(elem)
