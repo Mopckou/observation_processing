@@ -163,14 +163,13 @@ class READER:
             logger.info('%s - %s' % (v, self.GSH_B[v]['interpret']['marks']))
 
         #input()
-        self.__begin_search2(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
-        exit()
+        begin, end = self.__search_observation(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
+        #exit()
 
-        end = self.end_search()
-        begin = self.begin_search()
+        # end = self.end_search()
+        # begin = self.begin_search()
 
         logger.info('начало - %s и конец - %s предполагаемого наблюдения' % (begin, end))
-        input()
         end = end + 100
         begin = begin - 100
 
@@ -207,116 +206,121 @@ class READER:
 
             return self.__dict__[value][column]['array']
 
-    def __begin_search2(self, nsl, nsh, t):
-        # marks = []
-        # for i in range(len(A) - 1):
-        #     marks.append(
-        #         [A[i]['interpret']['marks'], A[i + 1]['interpret']['marks']]
-        #     )
-        #
-        # for i in range(len(B) - 1):
-        #     marks.append(
-        #         [B[i]['interpret']['marks'], B[i + 1]['interpret']['marks']]
-        #     )
-        c = {**nsl, **nsh}
-        n = []
+    def __search_observation(self, nsl, nsh, t):
+        ABS_WIDTH = 5  # ширина в процентах относительно файла наблдения. Параметр width не должен быть меньше!
+        ABS_PILLAR = 20  # ширина ГША не должа быть меньше чем ABS_PILLAR
 
+        ns = {**nsl, **nsh}
+        areas = []
         len_obs = len(t)
-        thermo_straight = [0] * len_obs
-        for num in c:
-            marks = c[num]['interpret']['marks']
-            for k, v in enumerate(marks[:-1]):
-                first_elem = marks[k]
-                second_elem = marks[k + 1]
-                width = second_elem['begin'] - first_elem['begin']
-                n.append(
-                    Area(first_elem['begin'], first_elem['count'], second_elem['count'], width, len_obs)
-                )
-                #self.__increment_area(thermo_straight, first_elem['begin'], second_elem['begin'])
 
+        for num in ns:  # собираем все участки в один массив, чтобы потом групировать
+            areas.extend(
+                self.__transform_mark_to_area(ns[num]['interpret']['marks'], len_obs)
+            )
 
-        print(n)
+        areas = list(filter(lambda x: x.abs_width > ABS_WIDTH, areas))  # фильтруются предполагаемые наблюдения
+        # у которых шиина наблюдения меньше чем ABS_WIDTH
+        logger.debug('Фильтруем предполагамые наблюдения у которых ширина меньше допустимного предела: %s' % areas)
+
+        areas = list(filter(lambda x: x.pillar_deviation < ABS_PILLAR, areas))
+        logger.debug('Фильтруем предполагаемые наблюдения у которых ширины ГША отклоняются друг от друга: %s' % areas)
+
+        groups = self.__group_area(areas)  # группируем предполагаемые наблюдения
+        logger.debug('Сгруппированные предполагамемые наблюдения: \n%s' %
+                     '\n-------------------------\n'.join(self.__prepare_for_log(group) for group in groups))
+
+        groups = sorted(groups, key=lambda x: len(x))  # сортриуем группы по количеству в них найденных элементов
+
+        if not groups:
+            raise Exception('Не найдено предполагаемое наблюдение!')
+
+        obs_group = groups[-1]
+        logger.debug('Найденная группа: \n%s' % self.__prepare_for_log(obs_group))
+
+        begin = sorted(obs_group, key=lambda x: x.begin)[0].begin
+        end = sorted(obs_group, key=lambda x: x.end)[-1].end
+
+        return begin, end
+
+    def __prepare_for_log(self, array):
+        return '\n'.join(str(i) for i in array)
+
+    def __group_area(self, areas):
         groups = []
 
-        for key, val in enumerate(n):
+        for key, val in enumerate(areas):
             res, group = self.__area_group_check(val, groups)
 
             if res:
                 group.append(val)
                 continue
 
-            if val in n[key + 1:]:
+            if val in areas[key + 1:]:
                 groups.append([val])
 
-        print(groups)
+        return groups
 
-        for i in groups:
-            print(len(i), *i)
+    @staticmethod
+    def __transform_mark_to_area(marks, len_obs):
+        """
+        Преобразование mark в участки (area). Которые представляют собой отрезок от mark1 до mark2
+        :param marks: 
+        :return: 
+        """
+        areas = []
 
+        for k, v in enumerate(marks[:-1]):
+            first_elem = marks[k]
+            second_elem = marks[k + 1]
+            #width = second_elem['begin'] - first_elem['begin']
+            areas.append(
+                Area(first_elem['begin'], second_elem['begin'], first_elem['count'], second_elem['count'], len_obs)
+            )
 
-        input()
+        return areas
 
-        # for i in range(len(marks)):
-        #     my_val = marks[i]
-        #
-        #     for val in marks[i:]:
-        #         if not self.__is_location() or not self.__is_equal_length():
-        #             continue
-        #
-        #         if self.__vals_in_group(my_val, val):
-        #             continue
-
-                #  проверяем подходит ли эти элементы к сущестующей группе
-
-                # делаем новую группу
-
-    def _filter(self, areas):
-        pass
-
-    def _is_equal_pillars(self, obj, other):
-        obj.rigth_pillar
-        other.right_pillar
-
-        obj.left_pillar
-        other.left_pillar
-
-    def __are_there_identical_area(self, area, areas):
-        return area in areas
-
-    def __area_group_check(self, area, groups):
+    @staticmethod
+    def __area_group_check(area, groups):
+        """
+        Проверка что участок соответствует одной из групп
+        :param area: 
+        :param groups: 
+        :return: 
+        """
         for group in groups:
             if area in group:
                 return True, group
 
         return False, None
 
-    @staticmethod
-    def __get_a_hot_area(_list, value):
-        begin = _list.index(value)
+    # @staticmethod
+    # def __get_a_hot_area(_list, value):
+    #     begin = _list.index(value)
+    #
+    #     end = -1
+    #     for key in range(begin, len(_list)):
+    #         if _list[key] != value:
+    #             break
+    #
+    #         end = key
+    #
+    #     return begin, end
 
-        end = -1
-        for key in range(begin, len(_list)):
-            if _list[key] != value:
-                break
-
-            end = key
-
-        return begin, end
 
 
-
-    def __increment_area(self, _list, begin, end):
-        [self.__increment_value(_list, index) for index in range(begin, end)]
-
-    @staticmethod
-    def __increment_value(_list, index):
-        _list[index] += 1
-
-    def __is_location(self, subgroup1, subgroup2):
-        elem1 = subgroup1[0]
-        elem2 = subgroup2[0]
-
-        count = len(self.TIME[TIME.T]['array'])
+    # def __increment_area(self, _list, begin, end):
+    #     [self.__increment_value(_list, index) for index in range(begin, end)]
+    #
+    # @staticmethod
+    # def __increment_value(_list, index):
+    #     _list[index] += 1
+    #
+    # def __is_location(self, subgroup1, subgroup2):
+    #     elem1 = subgroup1[0]
+    #     elem2 = subgroup2[0]
+    #
+    #     count = len(self.TIME[TIME.T]['array'])
 
 
     def end_search(self):
@@ -800,18 +804,27 @@ class Mark:
 
 class Area:
     acceptable_percent_of_location = 10  # допустимый процент расхождения по расположению предполагамеого наблюдения
-    acceptable_fraction_of_width = 5  # допустимый процент расхождения ширины предполагамого наблюдения
-    acceptable_width_of_pillars = 10  # допустимый процент расхождения ширины одной полоски ГШ
-    acceptable_abs_percent_of_width = 20
+    acceptable_fraction_of_width = 10  # допустимый процент расхождения ширины предполагамого наблюдения
+    acceptable_width_of_pillars = 15  # допустимый процент расхождения ширины одной полоски ГШ
+    acceptable_abs_percent_of_width = 30
 
-    def __init__(self, begin, count_begin, count_end, width, len_obs):
+    def __init__(self, begin, end, count_begin, count_end, len_obs):
         self.begin = begin
+        self.end = end
         self.left_pillar = count_begin
         self.right_pillar = count_end
-        self.width = width
+        self.width = self.end - self.begin
         self.len_obs = len_obs
+
+        self.pillars_average = (self.left_pillar + self.right_pillar) / 2
+        self.pillar_deviation = abs(100 - (self.pillars_average * 100) / self.left_pillar)  # отклонение от среднего
+        # pillar в процентаъ. Pillar это ширина одного ГША.
+        self.abs_width = self.__get_abs_width()
         self.location = self.__get_location()
         self.fraction = self.__get_fraction()
+
+    def __get_abs_width(self):
+        return (self.width * 100) / self.len_obs
 
     def __get_location(self):
         return (self.begin * 100) / self.len_obs
@@ -822,10 +835,6 @@ class Area:
     @staticmethod
     def is_close_location(obj, other):
         return abs(obj.location - other.location) <= Area.acceptable_percent_of_location
-
-    # @staticmethod
-    # def is_close_width(obj, other):
-    #     return abs(obj.fraction - other.fraction) <= Area.acceptable_fraction_of_width
 
     @staticmethod
     def is_close_width(obj, other):
@@ -840,8 +849,8 @@ class Area:
         return self.is_close_location(self, other) and self.is_close_width(self, other)# and self.is_close_pillars(self, other)
 
     def __str__(self):
-        return 'Area <begin - {}, width - {}, left pillar = {}, right pillar - {}>'.format(
-            self.begin, self.width, self.left_pillar, self.right_pillar)
+        return 'Area <begin - {}, end - {},  width - {}, left pillar = {}, right pillar - {}>'.format(
+            self.begin, self.end, self.width, self.left_pillar, self.right_pillar)
 
 
 class INTERPRETER:
@@ -934,9 +943,14 @@ class INTERPRETER:
     def get_interpreted_array(self):
         count = self.__get_count()
         elem = self.count_elements(self.array)
+        print(elem)
+        elem_sorted = sorted(elem, key=lambda x: elem[x], reverse=True)
+        print(elem_sorted)
         #print(elem)
-        if len(elem) > 2:
-            raise Exception('Элементов в массиве больше двух!')
+        if len(elem_sorted) > 2:
+            elem = {elem_sorted[0]: elem.get(elem_sorted[0]), elem_sorted[1]: elem.get(elem_sorted[1])}
+            #raise Exception('Элементов в массиве больше двух!')
+
         self.__get_conformity(elem)
 
         interpreted_array = self.__interpret(count, self.array)
@@ -956,6 +970,8 @@ class INTERPRETER:
             if elem == self.ON:
                 interpreted_array[num] = 1
             elif elem == self.OFF:
+                interpreted_array[num] = 0
+            else:
                 interpreted_array[num] = 0
         return interpreted_array
 

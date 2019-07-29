@@ -31,7 +31,7 @@ reader = READER(FILE)
 # x1 = reader.get_column(0)
 # y1 = reader.get_column(13)
 
-reader.file = sorted(reader.file, key=lambda x: (int(x[131]), f(x[100])))
+#reader.file = sorted(reader.file, key=lambda x: (int(x[131]), f(x[100])))
 # x2 = []
 # c = 0
 # for i in reader.get_column(0):
@@ -55,7 +55,7 @@ reader.file = sorted(reader.file, key=lambda x: (int(x[131]), f(x[100])))
 reader.parse()
 
 reader.cut_observation()  # обрезаем лишние участки когда наблюдение не ведется
-input()
+#input()
 reader.filter_digital_observation()  # фильтрация цифровых наблюдений на основе аналогового наблюдения
 reader.trim_to_seconds()  # изначально файл в милисекундах, обрезаем файл до секунд
 reader.trim_bad_areas()  # удаление нулевых участков
