@@ -1,7 +1,7 @@
 import numpy
 import logging
 from src.approximater import ApproximationMethod
-from src.helpers import INTERPRETER
+from src.helpers import INTERPRETER, READER
 
 logger = logging.getLogger('LOG')
 
@@ -56,6 +56,8 @@ class FinderGauss:
         #     self.__debug_plot(i)
         best_fits = self.__find_best_of_the_best(fits_by_width)  # поиск лучших апроксимаций среди всех ширин
         best_fits = self.__filter_excess_elements(best_fits)  # фильтрация лишних элементов
+        best_fits = self.__filter_unnecessary_fits(best_fits)
+
         #self.__debug_plot(best_fits)
         return best_fits
 
@@ -130,20 +132,22 @@ class FinderGauss:
         :return: Возвращается массив. Каждый элемент массива СВД апроксимация.
         """
         fits = []
-        fit_array = self.__approximate.fit(self.abscissa, self.ordinate, self.windows, width)
+        fit_array = self.__approximate.fit(
+            self.abscissa, self.ordinate, self.windows, width
+        )
 
         for num, fit in enumerate(fit_array):
-            hr = HandlingResult()
+            ft = Fit()
 
-            hr.x_segment = self.abscissa[num: num + self.windows]
-            hr.y_segment = self.ordinate[num: num + self.windows]
-            hr.width = width
-            hr.x_zero = fit[5]
-            hr.error = fit[4]
-            hr.coefficients = fit[:4]
-            hr.amplitude = fit[6]
+            ft.x_segment = self.abscissa[num: num + self.windows]
+            ft.y_segment = self.ordinate[num: num + self.windows]
+            ft.width = width
+            ft.x_zero = fit[5]
+            ft.error = fit[4]
+            ft.coefficients = fit[:4]
+            ft.amplitude = fit[6]
 
-            fits.append(hr)
+            fits.append(ft)
 
         return fits
 
@@ -255,6 +259,22 @@ class FinderGauss:
 
         return filtered_elements
 
+    @staticmethod
+    def __filter_unnecessary_fits(fits):
+        logger.debug('Амплитуды: \n%s' % (
+            '\n-------------------------\n'.join(READER.prepare_for_log(fits))))
+        groups = READER.break_down_into_groups(fits)
+        logger.debug('Сгруппированные предполагамемые амплитуды: \n%s' % (
+            '\n-------------------------\n'.join(READER.prepare_for_log(group) for group in groups)))
+
+        sorted_group = sorted(groups, key=lambda x: len(x))
+        if not sorted_group:
+            return []
+            #raise Exception('Не найдено ниодной амплитуды!')
+
+        logger.debug('Найденная группа: \n%s' % READER.prepare_for_log(sorted_group[-1]))
+        return sorted_group[-1]
+
     def __is_superfluous_expression(self, comparisons):
         excess = True
 
@@ -275,6 +295,7 @@ class FinderGauss:
                 comparisons.append(percent)
 
         return comparisons
+
 
     def __get_sys(self, fit):
         y_new = self.__approximate.get_new_segment(fit.coefficients, fit.x_segment, fit.x_zero, fit.width)
@@ -321,7 +342,8 @@ class FinderGauss:
         return self.__report
 
 
-class HandlingResult:
+class Fit:
+    acceptable_abs_percent_of_amplitude = 45  # допутимый процент расхождения по амлитуде
 
     def __init__(self):
         self.x_zero = None
@@ -337,6 +359,14 @@ class HandlingResult:
         return 'X0: %s; Width: %s; Error: %s, Coefficients: %s, amplitude: %s' % (
             self.x_zero, self.width, self.error, self.coefficients, self.amplitude
         )
+
+    def __eq__(self, other):
+        return self.__is_close_amplitude(self, other)
+
+    @staticmethod
+    def __is_close_amplitude(obj, other):
+        return abs(100 - (obj.amplitude * 100 / other.amplitude)) <= Fit.acceptable_abs_percent_of_amplitude
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt

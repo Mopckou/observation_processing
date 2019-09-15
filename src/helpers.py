@@ -51,6 +51,133 @@ class GshB:
     GSH_B_92_K2 = 57
 
 
+OBSERVATIONS = [
+    DIGITAL.OBSERVATION_6_K1,
+    DIGITAL.OBSERVATION_6_K2,
+    DIGITAL.OBSERVATION_18_K1,
+    DIGITAL.OBSERVATION_18_K2,
+    DIGITAL.OBSERVATION_92_K1,
+    DIGITAL.OBSERVATION_92_K2,
+]
+
+
+SETUP = {
+    DIGITAL.OBSERVATION_6_K1: (1, 25, 80, 0.3),
+    DIGITAL.OBSERVATION_6_K2: (1, 25, 80, 0.3),
+    DIGITAL.OBSERVATION_18_K1: (1, 100, 140, 0.8),
+    DIGITAL.OBSERVATION_18_K2: (1, 100, 140, 0.8),
+    DIGITAL.OBSERVATION_92_K1: (80, 150, 320, 0.8),
+    DIGITAL.OBSERVATION_92_K2: (80, 150, 320, 0.8)
+}
+
+
+TABLE = {
+    ANALOG.OBSERVATION_6_K1: {
+        'GSH_B_K1': GshB.GSH_B_6_K1,
+        'GSH_B_K2': GshB.GSH_B_6_K2,
+        'GSH_H_K1': GshH.GSH_H_6_K1,
+        'GSH_H_K2': GshH.GSH_H_6_K2
+    },
+
+    ANALOG.OBSERVATION_6_K2: {
+        'GSH_B_K1': GshB.GSH_B_6_K1,
+        'GSH_B_K2': GshB.GSH_B_6_K2,
+        'GSH_H_K1': GshH.GSH_H_6_K1,
+        'GSH_H_K2': GshH.GSH_H_6_K2
+    },
+
+    ANALOG.OBSERVATION_18_K1: {
+        'GSH_B_K1': GshB.GSH_B_18_K1,
+        'GSH_B_K2': GshB.GSH_B_18_K2,
+        'GSH_H_K1': GshH.GSH_H_18_K1,
+        'GSH_H_K2': GshH.GSH_H_18_K2
+    },
+
+    ANALOG.OBSERVATION_18_K2: {
+        'GSH_B_K1': GshB.GSH_B_18_K1,
+        'GSH_B_K2': GshB.GSH_B_18_K2,
+        'GSH_H_K1': GshH.GSH_H_18_K1,
+        'GSH_H_K2': GshH.GSH_H_18_K2
+    },
+
+    ANALOG.OBSERVATION_92_K1: {
+        'GSH_B_K1': GshB.GSH_B_92_K1,
+        'GSH_B_K2': GshB.GSH_B_92_K2,
+        'GSH_H_K1': GshH.GSH_H_92_K1,
+        'GSH_H_K2': GshH.GSH_H_92_K2
+    },
+
+    ANALOG.OBSERVATION_92_K2: {
+        'GSH_B_K1': GshB.GSH_B_92_K1,
+        'GSH_B_K2': GshB.GSH_B_92_K2,
+        'GSH_H_K1': GshH.GSH_H_92_K1,
+        'GSH_H_K2': GshH.GSH_H_92_K2
+    },
+
+    DIGITAL.OBSERVATION_6_K1: {
+        'GSH_B_K1': GshB.GSH_B_6_K1,
+        'GSH_B_K2': GshB.GSH_B_6_K2,
+        'GSH_H_K1': GshH.GSH_H_6_K1,
+        'GSH_H_K2': GshH.GSH_H_6_K2
+    },
+
+    DIGITAL.OBSERVATION_6_K2: {
+        'GSH_B_K1': GshB.GSH_B_6_K1,
+        'GSH_B_K2': GshB.GSH_B_6_K2,
+        'GSH_H_K1': GshH.GSH_H_6_K1,
+        'GSH_H_K2': GshH.GSH_H_6_K2
+    },
+
+    DIGITAL.OBSERVATION_18_K1: {
+        'GSH_B_K1': GshB.GSH_B_18_K1,
+        'GSH_B_K2': GshB.GSH_B_18_K2,
+        'GSH_H_K1': GshH.GSH_H_18_K1,
+        'GSH_H_K2': GshH.GSH_H_18_K2
+    },
+
+    DIGITAL.OBSERVATION_18_K2: {
+        'GSH_B_K1': GshB.GSH_B_18_K1,
+        'GSH_B_K2': GshB.GSH_B_18_K2,
+        'GSH_H_K1': GshH.GSH_H_18_K1,
+        'GSH_H_K2': GshH.GSH_H_18_K2
+    },
+
+    DIGITAL.OBSERVATION_92_K1: {
+        'GSH_B_K1': GshB.GSH_B_92_K1,
+        'GSH_B_K2': GshB.GSH_B_92_K2,
+        'GSH_H_K1': GshH.GSH_H_92_K1,
+        'GSH_H_K2': GshH.GSH_H_92_K2
+    },
+
+    DIGITAL.OBSERVATION_92_K2: {
+        'GSH_B_K1': GshB.GSH_B_92_K1,
+        'GSH_B_K2': GshB.GSH_B_92_K2,
+        'GSH_H_K1': GshH.GSH_H_92_K1,
+        'GSH_H_K2': GshH.GSH_H_92_K2
+    },
+}
+
+GROUPS = {
+    'OBSERVATION_6': [
+        DIGITAL.OBSERVATION_6_K1,
+        DIGITAL.OBSERVATION_6_K2,
+        ANALOG.OBSERVATION_6_K1,
+        ANALOG.OBSERVATION_6_K2
+    ],
+    'OBSERVATION_18': [
+        DIGITAL.OBSERVATION_18_K1,
+        DIGITAL.OBSERVATION_18_K2,
+        ANALOG.OBSERVATION_18_K1,
+        ANALOG.OBSERVATION_18_K2
+    ],
+    'OBSERVATION_92': [
+        DIGITAL.OBSERVATION_92_K1,
+        DIGITAL.OBSERVATION_92_K2,
+        ANALOG.OBSERVATION_92_K1,
+        ANALOG.OBSERVATION_92_K2
+    ],
+}
+
 class READER:
 
     def __init__(self, file):
@@ -192,12 +319,31 @@ class READER:
             self.TIME[v]['current_array'] = self.TIME[v]['cut_array']  # делаем ссылку на корректный объект, который
             # вызывается  методом get_array
 
+    def get_time(self, column):
+        if 'time' in self.get_object(column):
+            return self.get_object(column)['time']
+
+        return self.get_array(TIME.T)
+
     def get_array(self, column):
+        return self.get_object(column)['current_array']
+
+    def get_object(self, column):
+        """
+        Получение обьекта по номеру столбца.
+        Например получить обьект который содержит 14 столбец. На выхооде будет dict который содержится в
+        OBSERVATION[DIGITAL.OBSERVATION_6_K1]
+
+        :param column:
+        :return:
+        """
         for value in self.__dict__:
             if column not in self.__dict__[value]:
                 continue
 
-            return self.__dict__[value][column]['current_array']
+            return self.__dict__[value][column]
+
+        raise Exception('Наблюдение не найдено!')
 
     def get_original_array(self, column):
         for value in self.__dict__:
@@ -226,9 +372,9 @@ class READER:
         areas = list(filter(lambda x: x.pillar_deviation < ABS_PILLAR, areas))
         logger.debug('Фильтруем предполагаемые наблюдения у которых ширины ГША отклоняются друг от друга: %s' % areas)
 
-        groups = self.__group_area(areas)  # группируем предполагаемые наблюдения
+        groups = self.break_down_into_groups(areas)  # группируем предполагаемые наблюдения
         logger.debug('Сгруппированные предполагамемые наблюдения: \n%s' %
-                     '\n-------------------------\n'.join(self.__prepare_for_log(group) for group in groups))
+                     '\n-------------------------\n'.join(self.prepare_for_log(group) for group in groups))
 
         groups = sorted(groups, key=lambda x: len(x))  # сортриуем группы по количеству в них найденных элементов
 
@@ -236,27 +382,29 @@ class READER:
             raise Exception('Не найдено предполагаемое наблюдение!')
 
         obs_group = groups[-1]
-        logger.debug('Найденная группа: \n%s' % self.__prepare_for_log(obs_group))
+        logger.debug('Найденная группа: \n%s' % self.prepare_for_log(obs_group))
 
         begin = sorted(obs_group, key=lambda x: x.begin)[0].begin
         end = sorted(obs_group, key=lambda x: x.end)[-1].end
 
         return begin, end
 
-    def __prepare_for_log(self, array):
+    @staticmethod
+    def prepare_for_log(array):
         return '\n'.join(str(i) for i in array)
 
-    def __group_area(self, areas):
+    @staticmethod
+    def break_down_into_groups(sites):
         groups = []
 
-        for key, val in enumerate(areas):
-            res, group = self.__area_group_check(val, groups)
+        for key, val in enumerate(sites):
+            res, group = READER.group_attitue_check(val, groups)
 
             if res:
                 group.append(val)
                 continue
 
-            if val in areas[key + 1:]:
+            if val in sites[key + 1:]:
                 groups.append([val])
 
         return groups
@@ -281,15 +429,15 @@ class READER:
         return areas
 
     @staticmethod
-    def __area_group_check(area, groups):
+    def group_attitue_check(site, groups):
         """
         Проверка что участок соответствует одной из групп
-        :param area: 
+        :param site:
         :param groups: 
         :return: 
         """
         for group in groups:
-            if area in group:
+            if site in group:
                 return True, group
 
         return False, None
@@ -484,6 +632,61 @@ class READER:
 
     def trim_bad_areas(self):
         areas = self.__find_bad_areas()  # найти не корректные участки, которые обычно = 0.
+        #areas = self.__delete_equal(areas)
+        areas = self.__split_into_group(areas)
+
+        self.trim_bad_areas_in_ns(areas)
+        self.trim_bad_areas_in_observations(areas)
+
+    def __split_into_group(self, areas):
+        """
+        Разделение участков которые нужно удалить на группы:
+        1. 6см - (канал 1, канал 2)
+        2. 18см - (канал 1, канал 2)
+        3. 92см - (канал 1, канал 2)
+        """
+
+        groups = {}
+        print(areas)
+        for group in GROUPS:
+            groups[group] = [area for area in areas if group in area['observation']]
+
+        return groups
+
+    def trim_bad_areas_in_ns(self, observation_group):
+        # areas = self.__delete_equal_areas(areas)
+        # logger.debug('Уникальные интервалы для массива с ГШ: %s' % areas)
+        # input()
+        for group in observation_group:
+            observation_num = GROUPS[group][0]  # берем номер наблюдения с 1 каналом. ГША общий для обоих каналов
+            # поэтому можно взять любой и вырезать плохие участки в ГША массиве
+            areas = observation_group[group]
+            tags = self.__convert_areas_to_array_tags(
+                self.get_array(TIME.T), areas
+            )
+
+            ns = TABLE[observation_num]  # получение ГШ по номеру наблюдения
+            for num in ns.values():
+                obj = self.get_object(num)
+                obj['recovered_array'] = self.__trim_by_tags(self.get_array(num), tags)
+                obj['current_array'] = obj['recovered_array']
+
+    def trim_bad_areas_in_observations(self, observation_group):
+        for group_name in observation_group:
+            for observation_number in GROUPS[group_name]:
+                areas = observation_group[group_name]
+                tags = self.__convert_areas_to_array_tags(
+                    self.get_array(TIME.T), areas
+                )
+                observation = self.OBSERVATION[observation_number]
+
+                obs_array = self.get_array(observation_number)
+                observation['recovered_array'] = self.__trim_by_tags(obs_array, tags)
+                observation['current_array'] = observation['recovered_array']
+                observation['time'] = self.__adjust_time_array(self.get_array(TIME.T), tags)
+
+    def trim_bad_areas_old(self):
+        areas = self.__find_bad_areas_old()  # найти не корректные участки, которые обычно = 0.
         tags = self.__convert_areas_to_array_tags(
             self.get_array(TIME.T), areas
         )
@@ -552,9 +755,8 @@ class READER:
                     new_array[num] = sub_array_2[wing]
                     self._append_plot([self.get_array(TIME.T)[num: num + 3]], [new_array[num: num + 3]])
             except:
+                logger.debug('Ошибка в функции замены плохих значений. {} / {}'.format(deviation_1, deviation_2))
                 continue
-
-
 
         return new_array
 
@@ -572,6 +774,42 @@ class READER:
         return dispersion > acceptable_minimum
 
     def __find_bad_areas(self):
+        areas_by_observation = {}
+        bad_areas = []
+
+        for value in self.OBSERVATION:  # цикл по всем цифровым наблюдениям
+
+            if value not in DIGITAL.__dict__.values():  # ищем иммено цифровое наблюдение
+                continue
+
+            key = self.__get_key_name(DIGITAL.__dict__, value)  # получаем имя наблюдения, например: OBSERVATION_6_K1
+            logger.info('Обрабатывается наблюдение - %s' % key)
+            logger.debug('Value - %s, Key - %s' % (value, key))
+
+            digital_array = self.get_array(DIGITAL.__dict__[key])
+            analog_array = self.get_array(ANALOG.__dict__[key])
+
+            if not self.meaningful_data(digital_array) or not self.meaningful_data(analog_array):
+                continue
+
+            digital_intervals = INTERPRETER.get_equal_intervals(digital_array)
+            logger.debug('Одинаковые интервалы у цифры: %s' % digital_intervals)
+
+            analog_intervals = INTERPRETER.get_equal_intervals(analog_array)
+            logger.debug('Одинаковые интервалы у аналога: %s' % analog_intervals)
+
+            identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals, key, value, True)
+            logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_intervals)
+
+            areas_by_observation[value] = identical_intervals
+            bad_areas.extend(identical_intervals)
+        return bad_areas
+        # fi = self.(areas_by_observation)
+        # logger.debug('Идентичные интервалы у наблюдений: %s' % fi)
+        #
+        # return self.__find_equal_areas_by_observations(areas_by_observation)
+
+    def __find_bad_areas_old(self):
         areas_by_observation = {}
 
         for value in self.OBSERVATION:  # цикл по всем цифровым наблюдениям
@@ -595,14 +833,26 @@ class READER:
             analog_intervals = INTERPRETER.get_equal_intervals(analog_array)
             logger.debug('Одинаковые интервалы у аналога: %s' % analog_intervals)
 
-            identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals, key, True)
+            identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals, key, value, True)
             logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_intervals)
 
             areas_by_observation[key] = identical_intervals
+        equal_area = self.__find_equal_areas_by_observations_old(areas_by_observation)
+        logger.debug(equal_area)
+#        input()
+        return self.__find_equal_areas_by_observations_old(areas_by_observation)
 
-        return self.__find_equal_areas_by_observations(areas_by_observation)
+    def __delete_equal_areas(self, areas_by_observations):
+        founded_intervals = []
 
-    def __find_equal_areas_by_observations(self, areas_by_observations):
+        for observation in areas_by_observations:
+            area = areas_by_observations[observation]
+
+            founded_intervals = self.__update(founded_intervals, area)
+
+        return founded_intervals
+
+    def __find_equal_areas_by_observations_old(self, areas_by_observations):
         founded_intervals = []
 
         for observation in areas_by_observations:
@@ -617,8 +867,9 @@ class READER:
                 identical_intervals = self.__get_identical_intervals(area, other_area)
 
                 founded_intervals = self.__update(founded_intervals, identical_intervals)
+
         for i in founded_intervals:
-            print(i)
+            logger.debug(i)
         logger.debug('Интервалы для удаления: %s' % founded_intervals)
         return founded_intervals
 
@@ -707,7 +958,7 @@ class READER:
         if key is not None:
             return key
 
-    def __get_identical_intervals(self, intervals, other_intervals, key=None, flag=False):
+    def __get_identical_intervals(self, intervals, other_intervals, key=None, num=None, flag=False):
         identical_intervals = []
 
         for interval in intervals:
@@ -716,6 +967,7 @@ class READER:
                 if self.__interval_is_identical(interval, other_interval):
                     if flag:
                         other_interval['observation'] = key
+                        other_interval['observation_num'] = num
                     identical_intervals.append(other_interval)
 
         return identical_intervals
@@ -943,9 +1195,9 @@ class INTERPRETER:
     def get_interpreted_array(self):
         count = self.__get_count()
         elem = self.count_elements(self.array)
-        print(elem)
+        logger.debug(elem)
         elem_sorted = sorted(elem, key=lambda x: elem[x], reverse=True)
-        print(elem_sorted)
+        logger.debug(elem_sorted)
         #print(elem)
         if len(elem_sorted) > 2:
             elem = {elem_sorted[0]: elem.get(elem_sorted[0]), elem_sorted[1]: elem.get(elem_sorted[1])}
@@ -1062,17 +1314,17 @@ class INTERPRETER:
         marks = self.get_single_intervals(array)
         logger.debug(marks)
 
-        self.__second_filter(array, marks)  # фильр для длинных интервалов, которые отличаются от всех остальных
-        logger.debug(array)
+        #self.__second_filter(array, marks)  # фильр для длинных интервалов, которые отличаются от всех остальных
+        #logger.debug(array)
 
         try:
             for num, value in enumerate(marks):
                 end = value['end']
                 begin = marks[num + 1]['begin']
-                print('Between %s - %s. Way - %s' % (num, num + 1, begin - end))
+                logger.debug('Between %s - %s. Way - %s' % (num, num + 1, begin - end))
         except Exception as e:
-            print(e)
-            print('exit')
+            logger.debug(e)
+            logger.debug('exit')
 
         return array
 

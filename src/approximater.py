@@ -1,5 +1,6 @@
 from src.function import FUNCTION
 from src.svd_protocol import PROCESSING
+import os
 
 
 class APPROXIMATE:

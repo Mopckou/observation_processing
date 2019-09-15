@@ -1,0 +1,12 @@
+{
+  "test_gauss.py::test_gauss[out_6_92cm_spectr_20180110_133129_02_04_nomer_2.tmi]": true,
+  "test_gauss.py::test_gauss[out_6_92cm_spectr_20180212_180710_02_02_nomer_3.tmi]": true,
+  "test_gauss.py::test_gauss[out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi]": true,
+  "test_gauss.py::test_gauss[out_6_92cm_spectr_20180309_161910_02_02.tmi]": true,
+  "test_gauss.py::test_gauss[out_6_92cm_spectr_20181221_120246_02_02.tmi]": true,
+  "test_gauss.py::test_gauss[out_6_92cm_spectr_20181230_085116_01_02.tmi]": true,
+  "test_ns.py::test_ns[out_6_92cm_spectr_20180212_180710_02_02_nomer_3.tmi]": true,
+  "test_ns.py::test_ns[out_6_92cm_spectr_20180228_165341_01_02_nomer_4.tmi]": true,
+  "test_ns.py::test_ns[out_6_92cm_spectr_20180309_161910_02_02.tmi]": true,
+  "test_ns.py::test_ns[out_6_92cm_spectr_20181230_085116_01_02.tmi]": true
+}
