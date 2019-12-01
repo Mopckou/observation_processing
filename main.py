@@ -8,7 +8,7 @@ from src.finder_gsh import GshOPERATOR
 from src.finder_gauss import FinderGauss
 #test
 setup_logger()
-
+#  правочка
 LOG_DIRECTORY = os.path.join(os.getcwd(), 'OUT')
 
 conf = ConfigParser()
@@ -25,6 +25,8 @@ def f(val):
     return d
 
 reader = READER(FILE)
+
+
 # for i in reader.file:
 #     print(i)
 # reader.plot_graph(reader.get_column(0), reader.get_column(13), 'name', plt)
