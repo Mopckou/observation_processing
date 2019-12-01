@@ -6,7 +6,7 @@ from src.log import setup_logger
 from src.helpers import READER, DIGITAL, ANALOG, TIME, WRITER
 from src.finder_gsh import GshOPERATOR
 from src.finder_gauss import FinderGauss
-
+#test
 setup_logger()
 
 LOG_DIRECTORY = os.path.join(os.getcwd(), 'OUT')
