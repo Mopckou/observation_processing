@@ -27,8 +27,8 @@ class FinderGsh:
         self.plots = []
         self.gsh_B = {}
         self.gsh_H = {}
-        self.indent = 2  # отступ от края ГША, чтобы не учитывать время на выход на уровень
-        self.width_edge = 4
+        self.indent = 3  # отступ от края ГША, чтобы не учитывать время на выход на уровень
+        self.width_edge = 3
 
     def set_gsh_H(self, table, channel, array):
         self.gsh_H[channel] = {
@@ -223,7 +223,7 @@ class GshOPERATOR:
 
     def find_gsh(self, observation):
         parser = FinderGsh()
-        parser.indent = 3
+        parser.indent = 2
 
         gsh = TABLE[observation]
 

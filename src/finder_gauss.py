@@ -7,9 +7,10 @@ logger = logging.getLogger('LOG')
 
 
 class FinderGauss:
-    def __init__(self, abscissa, ordinate, width_begin, width_end, windows, error_limit, step=1):
+    def __init__(self, abscissa, ordinate, null, width_begin, width_end, windows, error_limit, step=1):
         self.abscissa = abscissa
         self.ordinate = ordinate
+        self.null = null
         self.width_begin = width_begin
         self.width_end = width_end
         self.windows = windows
@@ -85,8 +86,10 @@ class FinderGauss:
         sys_sigma = INTERPRETER.get_sigma(sys_list)
         sys_percent = INTERPRETER.get_percent(sys_sigma, sys_average)
 
+        logger.info('Отнимаем аппаратный ноль: {} - {} = {}'.format(sys_average, self.null, sys_average - self.null))
+
         self.__report['sys'] = {
-            'average': sys_average,
+            'average': sys_average - self.null,
             'sig': sys_percent
         }
 

@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger('LOG')
 
-path_svd = "Ermakov.exe"
+path_svd = "prog2.exe"
 abs_path = os.path.join(
     os.path.normpath(os.path.split(__file__)[0]),
     path_svd

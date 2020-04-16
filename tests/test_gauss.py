@@ -6,7 +6,7 @@ from tests.processed_data import GS
 def get_processed_data(reader, observation):
     x = reader.get_time(observation)
     y = reader.get_array(observation)
-    finder = FinderGauss(x, y, *SETUP[observation])
+    finder = FinderGauss(x, y, *SETUP[observation])  # TODO отнять аппаратный ноль!!!
     finder.find_gauss()
 
     return finder.get_report()

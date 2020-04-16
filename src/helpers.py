@@ -1,10 +1,12 @@
 import os
+import re
 import copy
 import numpy
 import scipy
-import random
 import errno
 import logging
+import statistics
+import random as random_number
 
 logger = logging.getLogger('LOG')
 
@@ -60,6 +62,20 @@ OBSERVATIONS = [
     DIGITAL.OBSERVATION_92_K2,
 ]
 
+OBSERVATIONS_DEV = [
+    DIGITAL.OBSERVATION_6_K1,
+    ANALOG.OBSERVATION_6_K1,
+    DIGITAL.OBSERVATION_6_K2,
+    ANALOG.OBSERVATION_6_K2,
+    DIGITAL.OBSERVATION_18_K1,
+    ANALOG.OBSERVATION_18_K1,
+    DIGITAL.OBSERVATION_18_K2,
+    ANALOG.OBSERVATION_18_K2,
+    DIGITAL.OBSERVATION_92_K1,
+    ANALOG.OBSERVATION_92_K1,
+    DIGITAL.OBSERVATION_92_K2,
+    ANALOG.OBSERVATION_92_K2,
+]
 
 SETUP = {
     DIGITAL.OBSERVATION_6_K1: (1, 25, 80, 0.3),
@@ -382,6 +398,10 @@ class READER:
             raise Exception('Не найдено предполагаемое наблюдение!')
 
         obs_group = groups[-1]
+        #obs_group = max(groups, key=lambda x: len(x)) ЭТО ТО О ЧЕМ Я ПОДУМАЛ???
+        obs_group = max(groups, key=lambda x: (len(x), x[0].abs_width))
+        print('')
+        #print(self.prepare_for_log(max(groups, key=lambda x: len(x))))
         logger.debug('Найденная группа: \n%s' % self.prepare_for_log(obs_group))
 
         begin = sorted(obs_group, key=lambda x: x.begin)[0].begin
@@ -631,8 +651,16 @@ class READER:
             self.TIME[v]['current_array'] = self.TIME[v]['trim_array']
 
     def trim_bad_areas(self):
-        areas = self.__find_bad_areas()  # найти не корректные участки, которые обычно = 0.
+        areas = self.__find_bad_areas(full_clear=True)  # найти не корректные участки, которые обычно = 0.
         #areas = self.__delete_equal(areas)
+        areas = self.__split_into_group(areas)
+        print(areas)
+        #input()
+        self.trim_bad_areas_in_ns(areas)
+        self.trim_bad_areas_in_observations(areas)
+
+    def trim_bad_dots(self):
+        areas = self.__find_bad_dot()
         areas = self.__split_into_group(areas)
 
         self.trim_bad_areas_in_ns(areas)
@@ -676,14 +704,15 @@ class READER:
             for observation_number in GROUPS[group_name]:
                 areas = observation_group[group_name]
                 tags = self.__convert_areas_to_array_tags(
-                    self.get_array(TIME.T), areas
+                    self.get_time(observation_number), areas
                 )
                 observation = self.OBSERVATION[observation_number]
 
                 obs_array = self.get_array(observation_number)
                 observation['recovered_array'] = self.__trim_by_tags(obs_array, tags)
                 observation['current_array'] = observation['recovered_array']
-                observation['time'] = self.__adjust_time_array(self.get_array(TIME.T), tags)
+                observation['time'] = self.__adjust_time_array(self.get_time(observation_number), tags)
+                #print(len(observation['current_array']), len(observation['time']))
 
     def trim_bad_areas_old(self):
         areas = self.__find_bad_areas_old()  # найти не корректные участки, которые обычно = 0.
@@ -709,6 +738,8 @@ class READER:
             # вызывается  методом get_array
 
     def replace_bad_values(self):
+        import matplotlib.pyplot as plt
+
         logger.info('ЗАМЕНА ПЛОХИХ ЗНАЧЕНИЙ!')
         for value in self.OBSERVATION:
 
@@ -719,21 +750,37 @@ class READER:
             logger.info('Обрабатывается наблюдение - %s' % key)
             logger.debug('Value - %s, Key - %s' % (value, key))
 
-            array = self.__replace_bad_values(
+            array, p = self.__replace_bad_values(
                 self.get_array(ANALOG.__dict__[key]),
                 self.get_array(DIGITAL.__dict__[key]),
+                self.get_time(ANALOG.__dict__[key])
             )
+            # for x, y in p:
+            #     plt.scatter(x, y, c='r', s=20)
+            # x = self.get_time(DIGITAL.__dict__[key])
+            # plt.scatter(x, array, c='g', s=10)
+            # self.plot_graph(x, self.get_array(DIGITAL.__dict__[key]), 'name', plt)
             logger.debug('Новый c замененными значениями: %s' % array)
 
             self.OBSERVATION[value]['replaced_array'] = array
             self.OBSERVATION[value]['current_array'] = self.OBSERVATION[value]['replaced_array']  # меняем ссылку на
             # возвращаемый массив в get_array
 
-    def __replace_bad_values(self, reference_array, array):
-        wing = 5  # количество точек на которое делаем отступ от плохой точки, чтобы узнать дисперсию участка
+    def __replace_bad_values_old(self, reference_array, array, x):
+        wing = 1   # количество точек на которое делаем отступ от плохой точки, чтобы узнать дисперсию участка
         minimum = 0.01
-
+        p = []
         new_array = copy.deepcopy(array)
+        for num, value in enumerate(new_array):
+            if reference_array[num] != new_array[num]:
+                continue
+
+            if reference_array[num] == new_array[num]:
+                p.append(
+                    [
+                        [x[num]], [new_array[num]]
+                    ]
+                )
 
         for num, value in enumerate(new_array):
             if reference_array[num] != new_array[num]:
@@ -753,12 +800,53 @@ class READER:
             try:
                 if deviation_2 / deviation_1 < minimum:
                     new_array[num] = sub_array_2[wing]
-                    self._append_plot([self.get_array(TIME.T)[num: num + 3]], [new_array[num: num + 3]])
+                    #self._append_plot([self.get_array(TIME.T)[num: num + 3]], [new_array[num: num + 3]])
             except:
                 logger.debug('Ошибка в функции замены плохих значений. {} / {}'.format(deviation_1, deviation_2))
                 continue
 
-        return new_array
+        return new_array, p
+
+    def __replace_bad_values(self, reference_array, array, x):
+        wing = 1   # количество точек на которое делаем отступ от плохой точки, чтобы узнать дисперсию участка
+        minimum = 0.01
+        p = []
+        new_array = copy.deepcopy(array)
+        for num, value in enumerate(new_array):
+            if reference_array[num] != new_array[num]:
+                continue
+
+            if reference_array[num] == new_array[num]:
+                p.append(
+                    [
+                        [x[num]], [new_array[num]]
+                    ]
+                )
+
+        for num, value in enumerate(new_array):
+            if reference_array[num] != new_array[num]:
+                continue
+
+            sub_array_1 = new_array[num - wing: num + wing + 1]
+            sub_array_2 = new_array[num - wing: num + wing + 1]
+
+            try:
+                sub_array_2[wing] = (sub_array_2[wing - 1] + sub_array_2[wing + 1]) / 2
+            except:
+                continue
+
+            deviation_1 = numpy.var(sub_array_1)
+            deviation_2 = numpy.var(sub_array_2)
+
+            try:
+                if deviation_2 / deviation_1 < minimum:
+                    new_array[num] = sub_array_2[wing]
+                    #self._append_plot([self.get_array(TIME.T)[num: num + 3]], [new_array[num: num + 3]])
+            except:
+                logger.debug('Ошибка в функции замены плохих значений. {} / {}'.format(deviation_1, deviation_2))
+                continue
+
+        return new_array, p
 
     def __adjust_time_array(self, array, tags):
         recovered_array = self.__trim_by_tags(array, tags)
@@ -767,13 +855,30 @@ class READER:
         return array[:count]
 
     @staticmethod
-    def meaningful_data(array):
-        acceptable_minimum = 0.1
-        dispersion = numpy.var(array, ddof=1)
+    def meaningful_data(observation_number, array, full_estimate=True):
+        sensitive_data = {  # наблдюдения у которых очень маленький стандартный разброс от среднего
+            DIGITAL.OBSERVATION_6_K1: (0.01, 0.8),
+            DIGITAL.OBSERVATION_6_K2: (0.01, 0.8),
+            ANALOG.OBSERVATION_6_K1: (0.01, 0.8),
+            ANALOG.OBSERVATION_6_K2: (0.01, 0.8)
+        }
 
-        return dispersion > acceptable_minimum
+        acceptable_sigma, acceptable_variate = sensitive_data.get(observation_number, (0.1, 1.))
+        average = statistics.mean(array)  # среднее
+        sigma = numpy.var(array, ddof=1)  # среднее отклонение
+        normal_variate = random_number.normalvariate(average, sigma)  # нормальное распределение
+        logger.debug('Наблюдение: %s. Среднее отклонение: %s. Нормальное распределение: %s' %
+            (observation_number, sigma, normal_variate)
+        )
+        print(acceptable_sigma, acceptable_variate)
+        if not full_estimate:
+            logger.debug('Не учитываем sigma при оценке наблюдения.')
+            return normal_variate > acceptable_variate
 
-    def __find_bad_areas(self):
+        return sigma > acceptable_sigma and normal_variate > acceptable_variate
+
+    def __find_bad_areas(self, full_clear=False):
+        minimum_count = 0  # минимальное количество точек в отрезке, который принимается за плохой участок
         areas_by_observation = {}
         bad_areas = []
 
@@ -789,7 +894,8 @@ class READER:
             digital_array = self.get_array(DIGITAL.__dict__[key])
             analog_array = self.get_array(ANALOG.__dict__[key])
 
-            if not self.meaningful_data(digital_array) or not self.meaningful_data(analog_array):
+            if not self.meaningful_data(value, digital_array) or not self.meaningful_data(value, analog_array):
+                print('continue')
                 continue
 
             digital_intervals = INTERPRETER.get_equal_intervals(digital_array)
@@ -800,6 +906,9 @@ class READER:
 
             identical_intervals = self.__get_identical_intervals(analog_intervals, digital_intervals, key, value, True)
             logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_intervals)
+
+            if not full_clear:
+                identical_intervals = list(filter(lambda x: x['count'] > minimum_count, identical_intervals))
 
             areas_by_observation[value] = identical_intervals
             bad_areas.extend(identical_intervals)
@@ -824,7 +933,7 @@ class READER:
             digital_array = self.get_array(DIGITAL.__dict__[key])
             analog_array = self.get_array(ANALOG.__dict__[key])
 
-            if not self.meaningful_data(digital_array) or not self.meaningful_data(analog_array):
+            if not self.meaningful_data(value, digital_array) or not self.meaningful_data(value, analog_array):
                 continue
 
             digital_intervals = INTERPRETER.get_equal_intervals(digital_array)
@@ -839,8 +948,35 @@ class READER:
             areas_by_observation[key] = identical_intervals
         equal_area = self.__find_equal_areas_by_observations_old(areas_by_observation)
         logger.debug(equal_area)
-#        input()
         return self.__find_equal_areas_by_observations_old(areas_by_observation)
+
+    def __find_bad_dot(self):
+        areas_by_observation = {}
+        bad_areas = []
+
+        for value in self.OBSERVATION:  # цикл по всем цифровым наблюдениям
+
+            if value not in DIGITAL.__dict__.values():  # ищем иммено цифровое наблюдение
+                continue
+
+            key = self.__get_key_name(DIGITAL.__dict__, value)  # получаем имя наблюдения, например: OBSERVATION_6_K1
+            logger.info('Обрабатывается наблюдение - %s' % key)
+            logger.debug('Value - %s, Key - %s' % (value, key))
+
+            digital_array = self.get_array(DIGITAL.__dict__[key])
+            analog_array = self.get_array(ANALOG.__dict__[key])
+
+            if not self.meaningful_data(value, digital_array) or not self.meaningful_data(value, analog_array):
+                print('continue')
+                continue
+
+            identical_dots = self.__get_identical_dots(digital_array, analog_array, key, value)
+            logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_dots)
+
+            areas_by_observation[value] = identical_dots
+            bad_areas.extend(identical_dots)
+
+        return bad_areas
 
     def __delete_equal_areas(self, areas_by_observations):
         founded_intervals = []
@@ -958,6 +1094,12 @@ class READER:
         if key is not None:
             return key
 
+    def __get_identical_dots(self, array, other_array, name, num):
+        print(len(array))
+        print(range(len(array)))
+        return [{'begin': i, 'end': i, 'value': array[i], 'count': 1, 'observation': name, 'observation_num': num}
+                for i in range(len(array)) if array[i] == other_array[i]]
+
     def __get_identical_intervals(self, intervals, other_intervals, key=None, num=None, flag=False):
         identical_intervals = []
 
@@ -1010,21 +1152,24 @@ class WRITER:
         self.a_sour = (0., 0,)
 
 
-    def write_result(self):
+    def write_result(self, file):
         tem = '\n'
         # tem += "#234567810123456782012345678301234567840123456785012345678601234567870123456788012345678901234567100123456711012345671201234567130123456714012345671501234567160\n"
         # tem += "# Title, ch1     Year MM DD Year.XXX  NSH1_1   sig     NSL1_1   sig     NSH2_1   sig     NSL2_1   sig     A_sys    sig     A_sour   sig  F_sou   g       T_cal=\n"
         # tem += "#        ch2                          NSH1_2           NSL1_2           NSH2_2           NSL2_2                                          Jy              =T/g,K\n"
         # tem += "# ==============================================================================================================================================================\n"
         # tem += "#\n"
+        date = re.findall(r'\d{8}', os.path.split(file)[1])
+
+        date = date[0] if date else '00000000'
         G1, S1 = round(self.nsh_1[0], 3), round(self.nsh_1[1], 4)
         G2, S2 = round(self.nsl_1[0], 3), round(self.nsl_1[1], 4)
         G3, S3 = round(self.nsh_2[0], 3), round(self.nsh_2[1], 4)
         G4, S4 = round(self.nsl_2[0], 3), round(self.nsl_2[1], 4)
         A1, S5 = round(self.a_sys[0], 3), round(self.a_sys[1], 4)
         A2, S6 = round(self.a_sour[0], 3), round(self.a_sour[1], 4)
-        tem += '%s 2018 08 09 0.0       %s     %s     %s      %s     %s      %s     %s      %s     %s       %s     %s     %s    0.0     0.0     0.0' % (
-        self.name, G1, S1, G2, S2, G3, S3, G4, S4, A1, S5, A2, S6)
+        tem += '%s %s %s %s 0.0       %s     %s     %s      %s     %s      %s     %s      %s     %s       %s     %s     %s    0.0     0.0     0.0' % (
+        self.name, date[0:4], date[4:6], date[6:8], G1, S1, G2, S2, G3, S3, G4, S4, A1, S5, A2, S6)
         log = self.create_result_file('result', 'result_file')
 
         fl = open(log, 'a')

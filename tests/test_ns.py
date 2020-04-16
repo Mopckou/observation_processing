@@ -8,11 +8,9 @@ def get_processed_data(reader, observation):
     operator = GshOPERATOR()
     operator.set_reader(reader)
 
-    original_y = reader.get_original_array(observation)
-
     observation_name = reader.get_name_observation(observation)
 
-    if not reader.meaningful_data(original_y):
+    if not reader.meaningful_data(observation, reader.get_array(observation), full_estimate=False):
         print('Файл %s пустой.' % observation_name)
         return
 
