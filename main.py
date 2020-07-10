@@ -1,7 +1,8 @@
 import os
 from configparser import ConfigParser
 from src.log import setup_logger
-from src.setup import observe, get_all_files_in_dir, ShortReport
+from src.setup import observe, ShortReport
+from src.helpers import get_all_files_in_dir
 
 setup_logger()
 
@@ -19,11 +20,12 @@ null = {
     '18': float(conf.get('NULL', 'L')),
     '92': float(conf.get('NULL', 'P')),
 }
+out_dir = conf.get('OUT', 'dir')
 report = ShortReport(report_name)
 
 for file in get_all_files_in_dir(path):
     try:
-        observe(file, plot, null)
+        observe(file, plot, null, out_dir)
     except Exception as e:
         report.write(file, False, e)
         continue

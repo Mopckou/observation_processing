@@ -43,8 +43,11 @@ class ApproximationMethod(APPROXIMATE):
         inq = self.process.get_inquery(func_list[self.func.name_func], width, windows, 4, count, x, y)
         return inq
 
-    def get_new_segment(self, coeff, x, t_nul, width):
-        return self.func.get_new_segment(coeff, x, t_nul, width)
+    def get_new_segment(self, coeff, x, t_nul, width, with_source=True):
+        if with_source:
+            return self.func.get_new_segment(coeff, x, t_nul, width)
+
+        return self.func.get_noise_segment(coeff, x, t_nul)
 
 
 if __name__ == '__main__':

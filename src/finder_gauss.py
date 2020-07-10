@@ -65,8 +65,93 @@ class FinderGauss:
     def handle_fits(self, fits):
         amplitude_list = []
 
+        fits = sorted(fits, key=lambda elem: elem.x_zero)
+
         for fit in fits:
-            amplitude_list.append(fit.amplitude)
+            # s, e = self.__get_sys(fit, deviation_percent=True, f=False)
+            # if e > 1:
+            #     continue
+            maxi = self.__approximate.get_new_segment(fit.coefficients, [fit.x_zero], fit.x_zero, fit.width)[0]
+            sys = self.__get_sys(fit, begin_points=10, end_points=10)  # 0.0306327343 0.02882219
+
+            print(maxi, sys, maxi - sys, fit.x_zero, fit.coefficients, fit.amplitude)  # 58134.0
+
+            amplitude_list.append(
+                maxi - sys  # fit.amplitude
+            )
+        # [0.02263826260567836, 0.02815849311778207, 0.025488162025318895]
+        # [0.02315183575551505, 0.026669386307034193, 0.023431774177149478]
+        # [0.020872510680330136, 0,02521959926375672, 0,02394360449329347]
+        # [0.018926639366411147, 0,027781655205677658, 0,022553886309640503]
+
+        #if len(amplitude_list) > 1:
+        count = len(amplitude_list) // 2
+        left = amplitude_list[:count]
+        right = amplitude_list[count:]
+
+        max_left = max(left)
+        max_right = max(right)
+        max_left_index = amplitude_list.index(max_left)
+        max_right_index = amplitude_list.index(max_right)
+        print(max_left_index)
+        print(max_right_index)
+        #breakpoint()
+        l = self.get_slice(amplitude_list, max_left_index)
+        r = self.get_slice(amplitude_list, max_right_index)
+        print(l)
+        print(r)
+
+        #breakpoint()
+        if len(l) == 2:
+            pass
+        else:
+            average11 = abs(l[0] - l[1])
+            average12 = abs(l[1] - l[2])
+            if average11 < average12:
+                l = l[:2]
+            else:
+                l = l[1:]
+
+        if len(r) == 2:
+            pass
+        else:
+            average21 = abs(r[0] - r[1])
+            average22 = abs(r[1] - r[2])
+            if average21 < average22:
+                r = r[:2]
+            else:
+                r = r[1:]
+
+        average1 = INTERPRETER.get_average(l)
+        sigma1 = INTERPRETER.get_sigma(l)
+        percent1 = INTERPRETER.get_percent(sigma1, average1)
+
+        average2 = INTERPRETER.get_average(r)
+        sigma2 = INTERPRETER.get_sigma(r)
+        percent2 = INTERPRETER.get_percent(sigma2, average2)
+
+            # f = self.fits[max_left_index]
+            # s, e = self.__get_sys(self.fits[max_left_index-1], deviation_percent=True)
+            # print(s, e)
+            # s, e = self.__get_sys(self.fits[max_left_index], deviation_percent=True)
+            # print(s, e)
+            # s, e = self.__get_sys(self.fits[max_left_index+1], deviation_percent=True)
+            #
+            # print(s, e)
+        if average1 > average2:
+            amplitude_list = l
+        else:
+            amplitude_list = r
+            #breakpoint()
+        if percent1 > 11:
+            amplitude_list = r
+        elif percent2 > 11:
+            amplitude_list = l
+        #breakpoint()
+        # 7 12
+        # 16 0,9060007035000001, 0,8759760081137249
+        # [0.020872510680330136, 0.02521959926375672, 0.02394360449329347]
+        # [0.018926639366411147, 0.027781655205677658, 0.022553886309640503]
 
         average = INTERPRETER.get_average(amplitude_list)
         sigma = INTERPRETER.get_sigma(amplitude_list)
@@ -95,6 +180,12 @@ class FinderGauss:
 
         return True
 
+    def get_slice(self, array, index):
+        count = len(array)
+        li = index - 1 if index - 1 >= 0 else index
+        ri = index + 2 if index + 1 <= count else index + 1
+        return array[li:ri]
+
     def set_plot_manager(self, plt):
         self.plt = plt
 
@@ -116,17 +207,58 @@ class FinderGauss:
         self.plt.show()
 
     def prepare_plot(self, plot):
+        for x_segment, y_new_segment in self.calculate_model_fits():
+            plot.plot(x_segment, y_new_segment)
 
+        return plot
+
+    def calculate_model_fits(self, x=None, many=False, with_source=True):
+        model_fits = []
         for fit in self.fits:
             coefficients = fit.coefficients
             x_segment = fit.x_segment
             width = fit.width
             x_zero = fit.x_zero
-            y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width)
+            if many:
+                #breakpoint()
+                x_index = x.index(x_zero)
 
-            plot.plot(x_segment, y_new_segment)
+                x_segment = x[x_index - 300: x_index + 250]
 
-        return plot
+            y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width, with_source)
+            model_fits.append(
+                (x_segment, y_new_segment)
+            )
+
+        return model_fits
+
+    def noise_90cm(self, fits):
+        print(fits[0])
+
+        new_fit = []
+        for fit in fits:
+            x_segmen = fit[0]
+            y_segment = fit[1]
+            x, x0 = x_segmen[-1], x_segmen[0]
+            y, y0 = y_segment[-1], y_segment[0]
+            coeff = (y - y0)/(x - x0)
+            yyy = y0 - coeff*x0
+            print(coeff)
+            fx = []
+            fy = []
+            for nx in fit[0]:
+                fx.append(
+                    nx
+                )
+
+                fy.append(nx*coeff + yyy)
+            print(fx)
+            print(fy)
+            new_fit.append(
+                (fx, fy)
+            )# 37497, 37498, 37499
+
+        return new_fit
 
     def __fit(self, width):
         """
@@ -299,8 +431,36 @@ class FinderGauss:
 
         return comparisons
 
+    def __get_sys(self, fit, deviation_percent=False, begin_points=10, end_points=10, f=True):
+        y_new = self.__approximate.get_new_segment(fit.coefficients, fit.x_segment, fit.x_zero, fit.width)
 
-    def __get_sys(self, fit):
+        if f:
+            begin_points = y_new[begin_points:begin_points + 5]
+            end_points = y_new[-(end_points + 5):-end_points]
+        else:
+            begin_points = y_new[:begin_points]
+            end_points = y_new[-end_points:]
+
+        logger.debug(begin_points)
+        logger.debug(end_points)
+
+        begin_average = INTERPRETER.get_average(begin_points)
+        end_average = INTERPRETER.get_average(end_points)
+
+        logger.debug('begin aver = %s' % begin_average)
+        logger.debug('end aver = %s' % end_average)
+
+        average = INTERPRETER.get_average(
+            [begin_average, end_average]
+        )
+
+        logger.debug('average = %s' % average)
+        if deviation_percent:
+            return average, abs(100 - INTERPRETER.get_percent(begin_average, average))
+
+        return average
+
+    def __get_deviation_sys_level(self, fit):
         y_new = self.__approximate.get_new_segment(fit.coefficients, fit.x_segment, fit.x_zero, fit.width)
         begin_points = y_new[:10]
         end_points = y_new[-10:]
@@ -321,11 +481,8 @@ class FinderGauss:
         logger.debug('average = %s' % average)
 
         return average
-        #
-        # maximum = self.__approximate.func.calc_dot(
-        #     fit.coefficients, fit.x_zero, fit.x_zero, fit.width
-        # )
-        # return maximum - average
+
+
 
     @staticmethod
     def __is_equally_location(x_zero, new_x_zero, windows):

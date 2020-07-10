@@ -2,10 +2,14 @@ import time
 import subprocess
 import os
 import logging
+import sys
 
 logger = logging.getLogger('LOG')
 
 path_svd = "newprog"
+if sys.platform.lower().startswith('win'):
+    path_svd = "Ermakov.exe"
+
 abs_path = os.path.join(
     os.path.normpath(os.path.split(__file__)[0]),
     path_svd

@@ -29,6 +29,7 @@ class FinderGsh:
         self.gsh_H = {}
         self.indent = 3  # отступ от края ГША, чтобы не учитывать время на выход на уровень
         self.width_edge = 3
+        self.real_plot = False
 
     def set_gsh_H(self, table, channel, array):
         self.gsh_H[channel] = {
@@ -151,9 +152,23 @@ class FinderGsh:
             new_right_edge_y = self.__get_new_sector(right_edge_y, average_right_edge)
             new_left_edge_y = self.__get_new_sector(left_edge_y, average_left_edge)
 
-            self._append_plot(sector_x, new_sector_y)
-            self._append_plot(right_edge_x, new_right_edge_y)
-            self._append_plot(left_edge_x, new_left_edge_y)
+            if not self.real_plot:  # для грасивого графика уберем отступ от включения ГШ
+                sector_x = self.abscissa[begin:end]
+                sector_y = self.ordinate[begin:end]
+                new_sector_y = self.__get_new_sector(sector_y, sector_average)
+                right_edge_y = self.ordinate[begin - self.width_edge - self.indent:begin]
+                right_edge_x = self.abscissa[begin - self.width_edge - self.indent:begin ]
+
+                left_edge_y = self.ordinate[end:end + self.indent + self.width_edge]
+                left_edge_x = self.abscissa[end:end + self.indent + self.width_edge]
+
+                new_right_edge_y = self.__get_new_sector(right_edge_y, average_right_edge)
+                new_left_edge_y = self.__get_new_sector(left_edge_y, average_left_edge)
+
+            self._append_plot(
+                right_edge_x + sector_x + left_edge_x,
+                new_right_edge_y + new_sector_y + new_left_edge_y
+            )
 
             averages.append(amplitude)
 
@@ -190,8 +205,11 @@ class FinderGsh:
         self.plt.grid(True)
         self.plt.show()
 
+    def calculate_model_fits(self):
+        return [(x,y) for x, y in self.plots]
+
     def prepare_plot(self):
-        for x, y in self.plots:
+        for x, y in self.calculate_model_fits():
             self.plt.plot(
                x, y
             )
@@ -212,38 +230,40 @@ class FinderGsh:
 
 class GshOPERATOR:
 
-    def __init__(self):
+    def __init__(self, reader):
         self.__result = False
         self.__description = ''
         self.__report = []
-        self.reader = None
+        self.finder_gsh = FinderGsh()
+        self.reader = reader
 
     def set_reader(self, reader):
         self.reader = reader
 
     def find_gsh(self, observation):
-        parser = FinderGsh()
-        parser.indent = 2
+        self.finder_gsh.indent = 2
 
         gsh = TABLE[observation]
 
-        parser.set_ordinate(self.reader.get_array(observation))
-        parser.set_abscissa(self.reader.get_time(observation))
+        self.finder_gsh.set_ordinate(self.reader.get_array(observation))
+        self.finder_gsh.set_abscissa(self.reader.get_time(observation))
 
-        parser.set_gsh_B(gsh['GSH_B_K1'], 1, self.reader.get_array(gsh['GSH_B_K1']))
-        parser.set_gsh_B(gsh['GSH_B_K2'], 2, self.reader.get_array(gsh['GSH_B_K2']))
+        self.finder_gsh.set_gsh_B(gsh['GSH_B_K1'], 1, self.reader.get_array(gsh['GSH_B_K1']))
+        self.finder_gsh.set_gsh_B(gsh['GSH_B_K2'], 2, self.reader.get_array(gsh['GSH_B_K2']))
 
-        parser.set_gsh_H(gsh['GSH_H_K1'], 1, self.reader.get_array(gsh['GSH_H_K1']))
-        parser.set_gsh_H(gsh['GSH_H_K2'], 2, self.reader.get_array(gsh['GSH_H_K2']))
+        self.finder_gsh.set_gsh_H(gsh['GSH_H_K1'], 1, self.reader.get_array(gsh['GSH_H_K1']))
+        self.finder_gsh.set_gsh_H(gsh['GSH_H_K2'], 2, self.reader.get_array(gsh['GSH_H_K2']))
 
-        parser.run()
+        self.finder_gsh.run()
 
-        self.__description = parser.get_description()
-        self.__result = parser.get_result()
-        self.__report = parser.get_report()
+        self.__description = self.finder_gsh.get_description()
+        self.__result = self.finder_gsh.get_result()
+        self.__report = self.finder_gsh.get_report()
 
-        #parser.build_graph()
-        parser.prepare_plot()
+        self.finder_gsh.prepare_plot()
+
+    def calculate_model_fits(self):
+        return self.finder_gsh.calculate_model_fits()
 
     def get_description(self):
         return self.__description
@@ -253,11 +273,3 @@ class GshOPERATOR:
 
     def get_report(self):
         return self.__report
-
-if __name__ == '__main__':
-
-
-
-    a = [{'count': 0.30215609}, {'count': 0.44846553}, {'count': 0.43828237}, {'count': 0.44720364}, {'count': 0.43806744}]
-
-    print(__get_excess_elements(a))

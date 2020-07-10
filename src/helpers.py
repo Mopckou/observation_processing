@@ -27,6 +27,7 @@ class ANALOG:
 
 
 class DIGITAL:
+    # OBSERVATION_1_35_K2 = 13
     OBSERVATION_6_K1 = 14
     OBSERVATION_6_K2 = 15
     OBSERVATION_18_K1 = 16
@@ -61,6 +62,15 @@ OBSERVATIONS = [
     DIGITAL.OBSERVATION_92_K1,
     DIGITAL.OBSERVATION_92_K2,
 ]
+
+OBSERVATION_VIEW = {
+    DIGITAL.OBSERVATION_6_K1: '6cm - C1',
+    DIGITAL.OBSERVATION_6_K2: '6cm - C2',
+    DIGITAL.OBSERVATION_18_K1: '18cm - L1',
+    DIGITAL.OBSERVATION_18_K2: '18cm - L2',
+    DIGITAL.OBSERVATION_92_K1: '92cm - P1',
+    DIGITAL.OBSERVATION_92_K2: '92cm - P2'
+}
 
 OBSERVATIONS_DEV = [
     DIGITAL.OBSERVATION_6_K1,
@@ -193,6 +203,28 @@ GROUPS = {
         ANALOG.OBSERVATION_92_K2
     ],
 }
+
+
+def get_files(path):
+    try:
+        return os.listdir(path)
+    except Exception as e:
+        pass
+
+
+def get_all_files_in_dir(path):
+    p = path
+
+    if get_files(p) and os.path.exists(p):
+        return [os.path.join(p, f) for f in get_files(p)]
+    elif get_files(p) is None and os.path.exists(p):
+        return [p]
+
+
+def generate_portion(array, portion):
+    for i in range(0, len(array), portion):
+        yield array[i: i+portion]
+
 
 class READER:
 
@@ -609,6 +641,41 @@ class READER:
             self.OBSERVATION[value]['filtered_array'] = array
             self.OBSERVATION[value]['current_array'] = self.OBSERVATION[value]['filtered_array']  # меняем ссылку на
             # возвращаемый массив в get_array
+
+    def cut_other_observation(self):
+        v = {}
+        for value in self.file:
+            if value[131] not in v:
+                v[value[131]] = 1
+                continue
+            v[value[131]] += 1
+        for i in v:
+            if v[i] == 1:
+                continue
+            print(i, '=', v[i])
+        exit()
+        # x, y = [], []
+        # for i in reader.file:
+        #     if i[131] == '6582':
+        #         x.append(int(i[0]))
+        #         y.append(float(i[14]))
+        #         """
+        #         6584 = 10177
+        # 10575 = 2
+        # 9942 = 2
+        # 39768 = 3
+        # 19884 = 3
+        # 43020 = 2
+        # 6583 = 6834
+        # 6577 = 1585
+        # 6578 = 2812
+        # 6582 = 5367
+        # """
+        # for value in self.OBSERVATION:
+        #     if value not in DIGITAL.__dict__.values():
+        #         continue
+
+
 
     def filter_bad_single_values(self):
         pass
@@ -1162,19 +1229,27 @@ class WRITER:
         date = re.findall(r'\d{8}', os.path.split(file)[1])
 
         date = date[0] if date else '00000000'
-        G1, S1 = round(self.nsh_1[0], 3), round(self.nsh_1[1], 4)
-        G2, S2 = round(self.nsl_1[0], 3), round(self.nsl_1[1], 4)
-        G3, S3 = round(self.nsh_2[0], 3), round(self.nsh_2[1], 4)
-        G4, S4 = round(self.nsl_2[0], 3), round(self.nsl_2[1], 4)
-        A1, S5 = round(self.a_sys[0], 3), round(self.a_sys[1], 4)
-        A2, S6 = round(self.a_sour[0], 3), round(self.a_sour[1], 4)
-        tem += '%s %s %s %s 0.0       %s     %s     %s      %s     %s      %s     %s      %s     %s       %s     %s     %s    0.0     0.0     0.0' % (
+        G1, S1 = round(self.nsh_1[0], 3), round(self.nsh_1[1], 0)
+        G2, S2 = round(self.nsl_1[0], 3), round(self.nsl_1[1], 0)
+        G3, S3 = round(self.nsh_2[0], 3), round(self.nsh_2[1], 0)
+        G4, S4 = round(self.nsl_2[0], 3), round(self.nsl_2[1], 0)
+        A1, S5 = round(self.a_sys[0], 4), round(self.a_sys[1], 0)
+        A2, S6 = round(self.a_sour[0], 4), round(self.a_sour[1], 0)
+        tem += '%s %s %s %s 0.0       %s    %s     %s    %s     %s    %s     %s    %s     %s    %s     %s    %s    0.0    0.0     0.0' % (
         self.name, date[0:4], date[4:6], date[6:8], G1, S1, G2, S2, G3, S3, G4, S4, A1, S5, A2, S6)
         log = self.create_result_file('result', 'result_file')
 
         fl = open(log, 'a')
         fl.write("%s\n" % (tem))
         fl.close()
+
+    @staticmethod
+    def lj(digital, count=4):
+        return str(digital).ljust(count, '0')
+
+    @staticmethod
+    def rj(digital, count=4):
+        return str(digital).rjust(count, '0')
 
     def create_result_file(self, type, name):
         name_folder = '%s' % type

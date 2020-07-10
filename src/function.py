@@ -64,6 +64,12 @@ class FUNCTION:
         func = self.right_angled if self.name_func == 'right_angled' else self.gussian_function
         return c[0] * 1. + c[1] * (t - t_nul) + c[2] * pow((t - t_nul), 2) + c[3] * func(t, t_nul, width)
 
+    def calc_noise_level(self, c, t, t_nul):
+        return c[0] * 1. + c[1] * (t - t_nul) + c[2] * pow((t - t_nul), 2)
+
+    def get_noise_segment(self, c, x, t_nul):
+        return [self.calc_noise_level(c, i, t_nul) for i in x]
+
     def get_new_segment(self, c, x, t_nul, width):
         """
         Функция возвращает отрезок ординаты Y, пересчитанный по новым коэффициентам 
