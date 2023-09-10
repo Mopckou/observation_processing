@@ -63,6 +63,16 @@ OBSERVATIONS = [
     DIGITAL.OBSERVATION_92_K2,
 ]
 
+ANALOG_OBSERVATIONS = [
+    ANALOG.OBSERVATION_6_K1,
+    ANALOG.OBSERVATION_6_K2,
+    ANALOG.OBSERVATION_18_K1,
+    ANALOG.OBSERVATION_18_K2,
+    ANALOG.OBSERVATION_92_K1,
+    ANALOG.OBSERVATION_92_K2,
+]
+
+
 OBSERVATION_VIEW = {
     DIGITAL.OBSERVATION_6_K1: '6cm - C1',
     DIGITAL.OBSERVATION_6_K2: '6cm - C2',
@@ -336,7 +346,7 @@ class READER:
 
         for v in self.GSH_B:
             logger.info('%s - %s' % (v, self.GSH_B[v]['interpret']['marks']))
-
+        #breakpoint()
         #input()
         begin, end = self.__search_observation(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
         #exit()
@@ -643,6 +653,10 @@ class READER:
             # возвращаемый массив в get_array
 
     def cut_other_observation(self):
+        """
+
+        :rtype: object
+        """
         v = {}
         for value in self.file:
             if value[131] not in v:
@@ -717,17 +731,16 @@ class READER:
             self.TIME[v]['trim_array'] = self.__trim_by_tags(array_with_sec, tags)
             self.TIME[v]['current_array'] = self.TIME[v]['trim_array']
 
-    def trim_bad_areas(self):
-        areas = self.__find_bad_areas(full_clear=True)  # найти не корректные участки, которые обычно = 0.
-        #areas = self.__delete_equal(areas)
+    def trim_bad_areas(self, check_ns):
+        areas = self.__find_bad_areas(full_clear=True, check_ns=check_ns)  # найти не корректные участки, которые обычно = 0.
         areas = self.__split_into_group(areas)
         print(areas)
-        #input()
+
         self.trim_bad_areas_in_ns(areas)
         self.trim_bad_areas_in_observations(areas)
 
-    def trim_bad_dots(self):
-        areas = self.__find_bad_dot()
+    def trim_bad_dots(self, check_ns):
+        areas = self.__find_bad_dot(check_ns=check_ns)
         areas = self.__split_into_group(areas)
 
         self.trim_bad_areas_in_ns(areas)
@@ -749,9 +762,6 @@ class READER:
         return groups
 
     def trim_bad_areas_in_ns(self, observation_group):
-        # areas = self.__delete_equal_areas(areas)
-        # logger.debug('Уникальные интервалы для массива с ГШ: %s' % areas)
-        # input()
         for group in observation_group:
             observation_num = GROUPS[group][0]  # берем номер наблюдения с 1 каналом. ГША общий для обоих каналов
             # поэтому можно взять любой и вырезать плохие участки в ГША массиве
@@ -768,6 +778,7 @@ class READER:
 
     def trim_bad_areas_in_observations(self, observation_group):
         for group_name in observation_group:
+
             for observation_number in GROUPS[group_name]:
                 areas = observation_group[group_name]
                 tags = self.__convert_areas_to_array_tags(
@@ -779,7 +790,6 @@ class READER:
                 observation['recovered_array'] = self.__trim_by_tags(obs_array, tags)
                 observation['current_array'] = observation['recovered_array']
                 observation['time'] = self.__adjust_time_array(self.get_time(observation_number), tags)
-                #print(len(observation['current_array']), len(observation['time']))
 
     def trim_bad_areas_old(self):
         areas = self.__find_bad_areas_old()  # найти не корректные участки, которые обычно = 0.
@@ -944,7 +954,7 @@ class READER:
 
         return sigma > acceptable_sigma and normal_variate > acceptable_variate
 
-    def __find_bad_areas(self, full_clear=False):
+    def __find_bad_areas(self, full_clear=False, check_ns=False):
         minimum_count = 0  # минимальное количество точек в отрезке, который принимается за плохой участок
         areas_by_observation = {}
         bad_areas = []
@@ -977,13 +987,30 @@ class READER:
             if not full_clear:
                 identical_intervals = list(filter(lambda x: x['count'] > minimum_count, identical_intervals))
 
+            if check_ns:
+                identical_intervals = list(filter(lambda x: not self.check_included_interval_in_NS(x), identical_intervals))
+
             areas_by_observation[value] = identical_intervals
             bad_areas.extend(identical_intervals)
+
         return bad_areas
-        # fi = self.(areas_by_observation)
-        # logger.debug('Идентичные интервалы у наблюдений: %s' % fi)
-        #
-        # return self.__find_equal_areas_by_observations(areas_by_observation)
+
+    def check_included_interval_in_NS(self, interval):
+        """
+        Проверка, одинаковые участки (плохие участки) являются ли участками ГШ?
+        :param interval:
+        :return:
+        """
+        all_ns = {**self.GSH_B, **self.GSH_H}
+
+        for ns_num, ns in all_ns.items():
+            array = self.get_array(ns_num)
+            begin, end = interval['begin'], interval['end']
+
+            if any(array[begin: end + 1]):
+                return True
+
+        return False
 
     def __find_bad_areas_old(self):
         areas_by_observation = {}
@@ -1017,7 +1044,7 @@ class READER:
         logger.debug(equal_area)
         return self.__find_equal_areas_by_observations_old(areas_by_observation)
 
-    def __find_bad_dot(self):
+    def __find_bad_dot(self, check_ns=False):
         areas_by_observation = {}
         bad_areas = []
 
@@ -1039,6 +1066,8 @@ class READER:
 
             identical_dots = self.__get_identical_dots(digital_array, analog_array, key, value)
             logger.debug('Идентичные интервалы у аналогового и цифрового наблюдения: %s' % identical_dots)
+            if check_ns:
+                identical_dots = list(filter(lambda x: not self.check_included_interval_in_NS(x), identical_dots))
 
             areas_by_observation[value] = identical_dots
             bad_areas.extend(identical_dots)
@@ -1115,7 +1144,7 @@ class READER:
         return new_array
 
     def __convert_areas_to_array_tags(self, array, areas):
-        tags = [True for i in array]
+        tags = [True for _ in array]
 
         for area in areas:
             begin = area['begin']
@@ -1209,7 +1238,8 @@ class READER:
 
 class WRITER:
 
-    def __init__(self, file_name):
+    def __init__(self, directory, file_name):
+        self.directory = directory
         self.name = file_name
         self.nsh_1 = (0., 0.)
         self.nsl_1 = (0., 0.)
@@ -1237,7 +1267,7 @@ class WRITER:
         A2, S6 = round(self.a_sour[0], 4), round(self.a_sour[1], 0)
         tem += '%s %s %s %s 0.0       %s    %s     %s    %s     %s    %s     %s    %s     %s    %s     %s    %s    0.0    0.0     0.0' % (
         self.name, date[0:4], date[4:6], date[6:8], G1, S1, G2, S2, G3, S3, G4, S4, A1, S5, A2, S6)
-        log = self.create_result_file('result', 'result_file')
+        log = self.create_result_file(self.directory, 'result', 'result_file')
 
         fl = open(log, 'a')
         fl.write("%s\n" % (tem))
@@ -1251,13 +1281,16 @@ class WRITER:
     def rj(digital, count=4):
         return str(digital).rjust(count, '0')
 
-    def create_result_file(self, type, name):
-        name_folder = '%s' % type
-        name_log = '%s.txt' % name
-        current_log_directory = os.path.join(LOG_DIRECTORY, name_folder)
+    def create_result_file(self, directory, folder, file_name):
+        name_folder = '%s' % folder
+        name_log = '%s.txt' % file_name
+        abs_directory = os.path.join(os.getcwd(), directory)
+        current_log_directory = os.path.join(abs_directory, name_folder)
         log = os.path.join(current_log_directory, name_log)
+
         if not os.path.exists(current_log_directory):
             self.make_sure_path_exists(current_log_directory)
+
         return log
 
     def make_sure_path_exists(self, path):
@@ -1418,7 +1451,6 @@ class INTERPRETER:
         logger.debug(elem)
         elem_sorted = sorted(elem, key=lambda x: elem[x], reverse=True)
         logger.debug(elem_sorted)
-        #print(elem)
         if len(elem_sorted) > 2:
             elem = {elem_sorted[0]: elem.get(elem_sorted[0]), elem_sorted[1]: elem.get(elem_sorted[1])}
             #raise Exception('Элементов в массиве больше двух!')

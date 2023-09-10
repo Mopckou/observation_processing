@@ -22,10 +22,14 @@ null = {
 }
 out_dir = conf.get('OUT', 'dir')
 report = ShortReport(report_name)
+setup = {
+    'check_ns': bool(conf.get('GENERAL', 'check_ns')),
+    'plot_raw_observation': bool(conf.get('GENERAL', 'plot_raw_observation'))
+}
 
 for file in get_all_files_in_dir(path):
     try:
-        observe(file, plot, null, out_dir)
+        observe(file, plot, null, out_dir, setup)
     except Exception as e:
         report.write(file, False, e)
         continue

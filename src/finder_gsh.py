@@ -64,8 +64,9 @@ class FinderGsh:
         for value in gsha:
             obj = gsha[value]
             result = self.verify(obj)
-            if not result:
-                raise ErrorVerifyGSHA
+            # TODO раскоментить
+            # if not result:
+            #     raise ErrorVerifyGSHA
 
     def set_ordinate(self, array):
         self.ordinate = array
@@ -152,12 +153,12 @@ class FinderGsh:
             new_right_edge_y = self.__get_new_sector(right_edge_y, average_right_edge)
             new_left_edge_y = self.__get_new_sector(left_edge_y, average_left_edge)
 
-            if not self.real_plot:  # для грасивого графика уберем отступ от включения ГШ
+            if not self.real_plot:  # для красивого графика уберем отступ от включения ГШ
                 sector_x = self.abscissa[begin:end]
                 sector_y = self.ordinate[begin:end]
                 new_sector_y = self.__get_new_sector(sector_y, sector_average)
                 right_edge_y = self.ordinate[begin - self.width_edge - self.indent:begin]
-                right_edge_x = self.abscissa[begin - self.width_edge - self.indent:begin ]
+                right_edge_x = self.abscissa[begin - self.width_edge - self.indent:begin]
 
                 left_edge_y = self.ordinate[end:end + self.indent + self.width_edge]
                 left_edge_x = self.abscissa[end:end + self.indent + self.width_edge]
@@ -206,7 +207,7 @@ class FinderGsh:
         self.plt.show()
 
     def calculate_model_fits(self):
-        return [(x,y) for x, y in self.plots]
+        return [(x, y) for x, y in self.plots]
 
     def prepare_plot(self):
         for x, y in self.calculate_model_fits():

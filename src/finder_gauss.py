@@ -2,6 +2,7 @@ import numpy
 import logging
 from src.approximater import ApproximationMethod
 from src.helpers import INTERPRETER, READER
+from src.gnuplot import generate_gnuplot_graf
 
 logger = logging.getLogger('LOG')
 
@@ -45,21 +46,21 @@ class FinderGauss:
 
         for width in numpy.arange(self.width_begin, self.width_end, self.step):
             fits = self.__fit(width)  # обработка файла на одной ширине
+
             fits = self.__filter_by_error(fits)  # фильтруются апроксимации с ошибкой большей допустимой
-            #self.__debug_plot(fits)
+            # # TODO удалить
+            # if width == 112:
+            #     self.fits0 = self.calculate_model_fits(fits=fits)
             fits = self.__filter_by_amplitude(fits)
-            #self.__debug_plot(fits)
+
             fits = self.__filter_by_group(fits)  # апроксимации разбиваются по группам и возвращаются лучшие из групп
-            #self.__debug_plot(fits)
+
             fits_by_width.append(fits)  # лучшие апроксимации добавляются в общий массив по всем ширинам
 
-        # for i in fits_by_width:
-        #     self.__debug_plot(i)
         best_fits = self.__find_best_of_the_best(fits_by_width)  # поиск лучших апроксимаций среди всех ширин
         best_fits = self.__filter_excess_elements(best_fits)  # фильтрация лишних элементов
         best_fits = self.__filter_unnecessary_fits(best_fits)
 
-        #self.__debug_plot(best_fits)
         return best_fits
 
     def handle_fits(self, fits):
@@ -71,6 +72,7 @@ class FinderGauss:
             # s, e = self.__get_sys(fit, deviation_percent=True, f=False)
             # if e > 1:
             #     continue
+            # breakpoint()
             maxi = self.__approximate.get_new_segment(fit.coefficients, [fit.x_zero], fit.x_zero, fit.width)[0]
             sys = self.__get_sys(fit, begin_points=10, end_points=10)  # 0.0306327343 0.02882219
 
@@ -147,11 +149,7 @@ class FinderGauss:
             amplitude_list = r
         elif percent2 > 11:
             amplitude_list = l
-        #breakpoint()
-        # 7 12
-        # 16 0,9060007035000001, 0,8759760081137249
-        # [0.020872510680330136, 0.02521959926375672, 0.02394360449329347]
-        # [0.018926639366411147, 0.027781655205677658, 0.022553886309640503]
+
 
         average = INTERPRETER.get_average(amplitude_list)
         sigma = INTERPRETER.get_sigma(amplitude_list)
@@ -212,20 +210,21 @@ class FinderGauss:
 
         return plot
 
-    def calculate_model_fits(self, x=None, many=False, with_source=True):
+    def calculate_model_fits(self, x=None, many=False, only_source=True, fits=None):
+        fits = fits if fits else self.fits
         model_fits = []
-        for fit in self.fits:
+
+        for fit in fits:
             coefficients = fit.coefficients
             x_segment = fit.x_segment
             width = fit.width
             x_zero = fit.x_zero
             if many:
-                #breakpoint()
                 x_index = x.index(x_zero)
 
                 x_segment = x[x_index - 300: x_index + 250]
 
-            y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width, with_source)
+            y_new_segment = self.__approximate.get_new_segment(coefficients, x_segment, x_zero, width, only_source)
             model_fits.append(
                 (x_segment, y_new_segment)
             )

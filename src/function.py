@@ -59,7 +59,7 @@ class FUNCTION:
         #return ((1 / (a0 * math.sqrt(2 * math.pi))) * pow((math.e), func_lambda(x)))
 
         return pow((math.e), func_lambda(x))
-
+#7, 7, 6, 6 |  116, 116, 112, 114 - K2 92 | 116, 105, 105, 100 - K2 | ---- 18, 19, 17, 18 - K1 18 | 18, 19, 18, 18 - K2 18
     def calc_dot(self, c, t, t_nul, width):
         func = self.right_angled if self.name_func == 'right_angled' else self.gussian_function
         return c[0] * 1. + c[1] * (t - t_nul) + c[2] * pow((t - t_nul), 2) + c[3] * func(t, t_nul, width)
