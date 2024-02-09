@@ -18,6 +18,8 @@ class TIME:
 
 
 class ANALOG:
+    OBSERVATION_1_35_K1 = 4
+    OBSERVATION_1_35_K2 = 5
     OBSERVATION_6_K1 = 6
     OBSERVATION_6_K2 = 7
     OBSERVATION_18_K1 = 8
@@ -27,7 +29,8 @@ class ANALOG:
 
 
 class DIGITAL:
-    # OBSERVATION_1_35_K2 = 13
+    OBSERVATION_1_35_K1 = 12
+    OBSERVATION_1_35_K2 = 13
     OBSERVATION_6_K1 = 14
     OBSERVATION_6_K2 = 15
     OBSERVATION_18_K1 = 16
@@ -52,6 +55,10 @@ class GshB:
     GSH_B_18_K2 = 55
     GSH_B_92_K1 = 56
     GSH_B_92_K2 = 57
+
+
+class TECH:
+    FRAME_COUNTER = 126
 
 
 OBSERVATIONS = [
@@ -276,12 +283,36 @@ class READER:
 
         return array
 
+    def sort_columns(self):
+        count_lines = len(self.file)
+        array = [0] * (count_lines + 1)
+        array = sorted(self.file, key=lambda x: x[TECH.FRAME_COUNTER - 1])
+        # for row in self.file:
+        #     if float(row[TECH.FRAME_COUNTER - 1]) % 1 != 0:
+        #         print(row[TECH.FRAME_COUNTER - 1])
+        #         raise Exception("Must be integer. See column TECH.FRAME_COUNTER")
+        #
+        #     index = int(row[TECH.FRAME_COUNTER - 1])
+        #     array[index] = row
+
+        self.file = array
+
+    def sort_columns_by_time_observation(self, restoring_observation_sequence=False):
+        if not restoring_observation_sequence:
+            return
+
+        new = copy.deepcopy(self.file)
+        array = sorted(new, key=lambda x: tuple(map(int, x[3 - 1].split(".")[0].split(":"))))
+        self.file = array
+
     def get_file(self):
         return self.file
 
     def parse(self):
         self.TIME[TIME.T] = {'array': self.__get_column(TIME.T - 1)}
 
+        #self.OBSERVATION[ANALOG.OBSERVATION_1_35_K1] = {'array': self.__get_column(ANALOG.OBSERVATION_1_35_K1 - 1)}
+        #self.OBSERVATION[ANALOG.OBSERVATION_1_35_K2] = {'array': self.__get_column(ANALOG.OBSERVATION_1_35_K2 - 1)}
         self.OBSERVATION[ANALOG.OBSERVATION_6_K1] = {'array': self.__get_column(ANALOG.OBSERVATION_6_K1 - 1)}
         self.OBSERVATION[ANALOG.OBSERVATION_6_K2] = {'array': self.__get_column(ANALOG.OBSERVATION_6_K2 - 1)}
         self.OBSERVATION[ANALOG.OBSERVATION_18_K1] = {'array': self.__get_column(ANALOG.OBSERVATION_18_K1 - 1)}
@@ -289,6 +320,8 @@ class READER:
         self.OBSERVATION[ANALOG.OBSERVATION_92_K1] = {'array': self.__get_column(ANALOG.OBSERVATION_92_K1 - 1)}
         self.OBSERVATION[ANALOG.OBSERVATION_92_K2] = {'array': self.__get_column(ANALOG.OBSERVATION_92_K2 - 1)}
 
+        self.OBSERVATION[DIGITAL.OBSERVATION_1_35_K1] = {'array': self.__get_column(DIGITAL.OBSERVATION_1_35_K1 - 1)}
+        self.OBSERVATION[DIGITAL.OBSERVATION_1_35_K2] = {'array': self.__get_column(DIGITAL.OBSERVATION_1_35_K2 - 1)}
         self.OBSERVATION[DIGITAL.OBSERVATION_6_K1] = {'array': self.__get_column(DIGITAL.OBSERVATION_6_K1 - 1)}
         self.OBSERVATION[DIGITAL.OBSERVATION_6_K2] = {'array': self.__get_column(DIGITAL.OBSERVATION_6_K2 - 1)}
         self.OBSERVATION[DIGITAL.OBSERVATION_18_K1] = {'array': self.__get_column(DIGITAL.OBSERVATION_18_K1 - 1)}
@@ -335,9 +368,9 @@ class READER:
             gsh['interpret']['new_array'] = new_array
             gsh['interpret']['marks'] = marks
             gsh['interpret']['count_on_interval'] = count_on_interval
-            #input()
 
-    def cut_observation(self):
+    def cut_observation(self, hand_input=False):
+        begin, end = 0, 0
         self.interpret_gsh(self.GSH_B)
         self.interpret_gsh(self.GSH_H)
 
@@ -348,15 +381,22 @@ class READER:
             logger.info('%s - %s' % (v, self.GSH_B[v]['interpret']['marks']))
         #breakpoint()
         #input()
-        begin, end = self.__search_observation(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
+        if not hand_input:
+            begin, end = self.__search_observation(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
         #exit()
 
         # end = self.end_search()
         # begin = self.begin_search()
 
         logger.info('начало - %s и конец - %s предполагаемого наблюдения' % (begin, end))
-        end = end + 100
-        begin = begin - 100
+        end = end + 300
+        begin = begin - 300
+
+        if hand_input:
+            logger.info('Введите начало предполагаемого наблюдения (увеличенное окно)\n')
+            begin = int(input())
+            logger.info('Введите конец предполагаемого наблюдения (увеличенное окно)\n')
+            end = int(input())
 
         logger.info('начало - %s и конец - %s предполагаемого наблюдения (увеличенное окно)' % (begin, end))
 
@@ -374,8 +414,43 @@ class READER:
 
         for v in self.TIME:
             self.TIME[v]['cut_array'] = self.TIME[v]['array'][begin:end]
-            self.TIME[v]['current_array'] = self.TIME[v]['cut_array']  # делаем ссылку на корректный объект, который
+            self.TIME[v]['current_array'] = self.TIME[v]['cut_array']  # делаем ссылку на актуальный объект, который
             # вызывается  методом get_array
+
+    # def sort_by_frame(self):
+    #     self.interpret_gsh(self.GSH_B)
+    #     self.interpret_gsh(self.GSH_H)
+    #
+    #     for v in self.GSH_H:
+    #         logger.info('%s - %s' % (v, self.GSH_H[v]['interpret']['marks']))
+    #
+    #     for v in self.GSH_B:
+    #         logger.info('%s - %s' % (v, self.GSH_B[v]['interpret']['marks']))
+    #
+    #     begin, end = self.__search_observation(self.GSH_H, self.GSH_B, self.TIME[TIME.T]['array'])
+    #
+    #     logger.info('начало - %s и конец - %s предполагаемого наблюдения' % (begin, end))
+    #     end = end + 100
+    #     begin = begin - 100
+    #
+    #     logger.info('начало - %s и конец - %s предполагаемого наблюдения (увеличенное окно)' % (begin, end))
+    #
+    #     for v in self.GSH_H:
+    #         self.GSH_H[v]['sorted_by_frame'] = self.GSH_H[v]['interpret']['new_array'][begin:end]
+    #         self.GSH_H[v]['current_array'] = self.GSH_H[v]['sorted_by_frame']
+    #
+    #     for v in self.GSH_B:
+    #         self.GSH_B[v]['sorted_by_frame'] = self.GSH_B[v]['interpret']['new_array'][begin:end]
+    #         self.GSH_B[v]['current_array'] = self.GSH_B[v]['sorted_by_frame']
+    #
+    #     for v in self.OBSERVATION:
+    #         self.OBSERVATION[v]['sorted_by_frame'] = self.OBSERVATION[v]['array'][begin:end]
+    #         self.OBSERVATION[v]['current_array'] = self.OBSERVATION[v]['sorted_by_frame']
+    #
+    #     for v in self.TIME:
+    #         self.TIME[v]['sorted_by_frame'] = self.TIME[v]['array'][begin:end]
+    #         self.TIME[v]['current_array'] = self.TIME[v]['sorted_by_frame']  # делаем ссылку на актуальный объект, который
+    #         # вызывается  методом get_array
 
     def get_time(self, column):
         if 'time' in self.get_object(column):
@@ -384,7 +459,9 @@ class READER:
         return self.get_array(TIME.T)
 
     def get_array(self, column):
-        return self.get_object(column)['current_array']
+        if 'current_array' in self.get_object(column):
+            return self.get_object(column)['current_array']
+        return self.get_object(column)['array']
 
     def get_object(self, column):
         """
@@ -442,8 +519,6 @@ class READER:
         obs_group = groups[-1]
         #obs_group = max(groups, key=lambda x: len(x)) ЭТО ТО О ЧЕМ Я ПОДУМАЛ???
         obs_group = max(groups, key=lambda x: (len(x), x[0].abs_width))
-        print('')
-        #print(self.prepare_for_log(max(groups, key=lambda x: len(x))))
         logger.debug('Найденная группа: \n%s' % self.prepare_for_log(obs_group))
 
         begin = sorted(obs_group, key=lambda x: x.begin)[0].begin
@@ -675,24 +750,9 @@ class READER:
         #         y.append(float(i[14]))
         #         """
         #         6584 = 10177
-        # 10575 = 2
-        # 9942 = 2
-        # 39768 = 3
-        # 19884 = 3
-        # 43020 = 2
-        # 6583 = 6834
-        # 6577 = 1585
-        # 6578 = 2812
-        # 6582 = 5367
-        # """
         # for value in self.OBSERVATION:
         #     if value not in DIGITAL.__dict__.values():
         #         continue
-
-
-
-    def filter_bad_single_values(self):
-        pass
 
     def handle_observation(self, array):
 
@@ -705,15 +765,22 @@ class READER:
             if second_value - aver > 1:
                 array[num + 1] = first_value
 
-    def trim_to_seconds(self):
+    def trim_to_seconds(self, restoring_observation_sequence=False):
         """
         Функция обрезает файлы наблюдений до секунд.
         :return: 
         """
-        array_with_sec = self.__array_to_seconds(
-            self.get_array(TIME.T)
-        )
-        tags = self.__get_trim_tags(array_with_sec)
+        array_to_trim = self.get_array(TIME.T)
+
+        if not restoring_observation_sequence: # добавил проверку на этот параметр
+            # для старых наблюдений сбито время и наблюдение может быть кусками неправильно располагаться
+            # ранее в коде с помощью этого параметра включается сортировка наблюдения. А тут не допускаю обрезания времени до секунд
+            # если включен этот параметр нужно подругому обрезать время
+            array_to_trim = self.__array_to_seconds(
+                self.get_array(TIME.T)
+            )
+
+        tags = self.__get_trim_tags(array_to_trim)
 
         for v in self.GSH_H:
             self.GSH_H[v]['trim_array'] = self.__trim_by_tags(self.get_array(v), tags)
@@ -728,8 +795,32 @@ class READER:
             self.OBSERVATION[v]['current_array'] = self.OBSERVATION[v]['trim_array']
 
         for v in self.TIME:
-            self.TIME[v]['trim_array'] = self.__trim_by_tags(array_with_sec, tags)
+            self.TIME[v]['trim_array'] = self.__trim_by_tags(array_to_trim, tags)
             self.TIME[v]['current_array'] = self.TIME[v]['trim_array']
+
+    def replacing_time_column(self, renumerate_time_column=False):
+        """
+        Функция перенумеровывает столбец со временем
+        :return:
+        """
+        if not renumerate_time_column:
+            return
+
+        array_to_trim = self.get_array(TIME.T)
+        for i in range(len(array_to_trim)):
+            array_to_trim[i] = i
+
+    def get_numerated_time_column(self):
+        """
+        Функция возвращает столбец со временем читаемым
+        :return:
+        """
+        array_to_trim = self.get_array(TIME.T)
+        result = []
+        for i in range(len(array_to_trim)):
+            result.append(i)
+
+        return result
 
     def trim_bad_areas(self, check_ns):
         areas = self.__find_bad_areas(full_clear=True, check_ns=check_ns)  # найти не корректные участки, которые обычно = 0.
@@ -934,10 +1025,10 @@ class READER:
     @staticmethod
     def meaningful_data(observation_number, array, full_estimate=True):
         sensitive_data = {  # наблдюдения у которых очень маленький стандартный разброс от среднего
-            DIGITAL.OBSERVATION_6_K1: (0.01, 0.8),
-            DIGITAL.OBSERVATION_6_K2: (0.01, 0.8),
-            ANALOG.OBSERVATION_6_K1: (0.01, 0.8),
-            ANALOG.OBSERVATION_6_K2: (0.01, 0.8)
+            DIGITAL.OBSERVATION_6_K1: (0.001, 0.08),
+            DIGITAL.OBSERVATION_6_K2: (0.001, 0.08),
+            ANALOG.OBSERVATION_6_K1: (0.001, 0.08),
+            ANALOG.OBSERVATION_6_K2: (0.001, 0.08)
         }
 
         acceptable_sigma, acceptable_variate = sensitive_data.get(observation_number, (0.1, 1.))
@@ -1357,6 +1448,9 @@ class Area:
         return 'Area <begin - {}, end - {},  width - {}, left pillar = {}, right pillar - {}>'.format(
             self.begin, self.end, self.width, self.left_pillar, self.right_pillar)
 
+    def __repr__(self):
+        return 'Area <begin - {}, end - {},  width - {}, left pillar = {}, right pillar - {}>'.format(
+            self.begin, self.end, self.width, self.left_pillar, self.right_pillar)
 
 class INTERPRETER:
     ON = 1
@@ -1390,6 +1484,9 @@ class INTERPRETER:
     @staticmethod
     def get_sigma(array):
         sigma = 0.
+        if len(array) == 1:
+            return sigma
+
         count = len(array)
         average = INTERPRETER.get_average(array)
 

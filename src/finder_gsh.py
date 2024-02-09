@@ -27,8 +27,8 @@ class FinderGsh:
         self.plots = []
         self.gsh_B = {}
         self.gsh_H = {}
-        self.indent = 3  # отступ от края ГША, чтобы не учитывать время на выход на уровень
-        self.width_edge = 3
+        self.indent = 1  # отступ от края ГША, чтобы не учитывать время на выход на уровень
+        self.width_edge = 1
         self.real_plot = False
 
     def set_gsh_H(self, table, channel, array):
@@ -79,24 +79,22 @@ class FinderGsh:
             self.check_gsha()
         except ErrorVerifyGSHA:
             self.__set_result(False, 'Недопустимое количество включений ГША!')
+            print('ОШИБКА')
             return
 
         except Exception as e:
             logger.exception(e)
             self.__set_result(False, 'Ошибка в ходе проверки ГША!')
+            print('ОШИБКА')
             return
 
-        try:
-            self.calc_nsh(channel=1)
-            self.calc_nsh(channel=2)
+        self.calc_nsh(channel=1)
+        self.calc_nsh(channel=2)
 
-            self.calc_nsl(channel=1)
-            self.calc_nsl(channel=2)
-        except Exception as e:
-            logger.exception(e)
-            self.__set_result(False, 'Ошибка в обработке наблюдения!')
-        else:
-            self.__set_result(True, 'Ошибок нет.')
+        self.calc_nsl(channel=1)
+        self.calc_nsl(channel=2)
+        self.__set_result(True, 'Ошибок нет.')
+
 
     def calc_nsh(self, channel):
         nsh = self.NSH[channel]
@@ -104,7 +102,13 @@ class FinderGsh:
         self.__report[nsh] = {}
         gsh = self.gsh_B[channel]['array']
 
-        average, sig = self.__calc(gsh)
+        try:
+            average, sig = self.__calc(gsh)
+        except Exception as e:
+            logger.exception(e)
+            self.__report[nsh]['average'] = 0
+            self.__report[nsh]['sig'] = 0
+            return
 
         if sig > 60 or sig < 0:
             average, sig = 0.0, 0.0
@@ -118,7 +122,13 @@ class FinderGsh:
         self.__report[nsl] = {}
         gsh = self.gsh_H[channel]['array']
 
-        average, sig = self.__calc(gsh)
+        try:
+            average, sig = self.__calc(gsh)
+        except Exception as e:
+            logger.exception(e)
+            self.__report[nsl]['average'] = 0
+            self.__report[nsl]['sig'] = 0
+            return
 
         if sig > 60 or sig < 0:
             average, sig = 0.0, 0.0
@@ -172,6 +182,12 @@ class FinderGsh:
             )
 
             averages.append(amplitude)
+
+        if len(averages) == 0:
+            return -1, -1
+
+        if len(averages) == 1:
+            return averages[0], 0
 
         _average = INTERPRETER.get_average(averages)
         sigma = INTERPRETER.get_sigma(averages)

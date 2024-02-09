@@ -10,7 +10,17 @@ def observe(file, plot, null, out_dir, setup):
     reader = READER(file)
     reader.parse()
 
-    x = reader.TIME[TIME.T]['array']
+    reader.sort_columns_by_time_observation(setup['restoring_observation_sequence'])
+    x = reader.get_numerated_time_column()
+
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_1_35_K1]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 1_35_K1', plt)
+    #
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_1_35_K2]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 1_35_K2', plt)
+
     y = reader.OBSERVATION[DIGITAL.OBSERVATION_92_K2]['array']
     if setup['plot_raw_observation']:
         reader.plot_graph(x, y, 'observation_name 92_K2', plt)
@@ -34,17 +44,42 @@ def observe(file, plot, null, out_dir, setup):
     y = reader.OBSERVATION[DIGITAL.OBSERVATION_6_K2]['array']
     if setup['plot_raw_observation']:
         reader.plot_graph(x, y, 'observation_name 6_K2', plt)
+    # reader.sort_columns2()
+    #
+    # x = reader.TIME[TIME.T]['array']
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_92_K2]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 92_K2', plt)
+    #
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_92_K1]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 92_K1', plt)
+    #
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_18_K1]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 18_K1', plt)
+    #
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_18_K2]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 18_K2', plt)
+    #
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_6_K1]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 6_K1', plt)
+    #
+    # y = reader.OBSERVATION[DIGITAL.OBSERVATION_6_K2]['array']
+    # if setup['plot_raw_observation']:
+    #     reader.plot_graph(x, y, 'observation_name 6_K2', plt)
 
-    reader.cut_observation()  # обрезаем лишние участки когда наблюдение не ведется
-    x = reader.get_time(TIME.T)
+    reader.cut_observation(setup['hands_input'])  # обрезаем лишние участки когда наблюдение не ведется
     reader.filter_digital_observation()  # фильтрация цифровых наблюдений на основе аналогового наблюдения
 
-    reader.trim_to_seconds()  # изначально файл в милисекундах, обрезаем файл до секунд
+    reader.trim_to_seconds(setup['restoring_observation_sequence'])  # изначально файл в милисекундах, обрезаем файл до секунд
     #generate_gnuplot_graf(out_dir, file, ANALOG.OBSERVATION_6_K1, (x, reader.get_array(DIGITAL.OBSERVATION_92_K1)), [], prefix_name='after_time_clearing')
     # generate_gnuplot_graf(out_dir, file, ANALOG.OBSERVATION_6_K1, (x, reader.get_array(DIGITAL.OBSERVATION_92_K2)), [], prefix_name='digital_92k2')
     # generate_gnuplot_graf(out_dir, file, ANALOG.OBSERVATION_6_K1, (x[100:500], reader.get_array(DIGITAL.OBSERVATION_92_K1)[100:500]), [], prefix_name='SOURCE_92k1')
     # generate_gnuplot_graf(out_dir, file, ANALOG.OBSERVATION_6_K1, (x[500:-1000], reader.get_array(DIGITAL.OBSERVATION_92_K2)[500:-1000]), [], prefix_name='bad_areas_2_92k2')
-
+    reader.replacing_time_column(setup['renumerate_time_column'])
     reader.trim_bad_areas(setup['check_ns'])  # удаление нулевых участков
     reader.trim_bad_dots(setup['check_ns'])
     reader.replace_bad_values()
@@ -107,7 +142,7 @@ def observe(file, plot, null, out_dir, setup):
         #     #noise_fits = source_finder.noise_90cm(model_fits)
         #     noise_fits = source_finder.calculate_model_fits(x=x, many=True, with_source=False)
         #     model_fits = source_finder.calculate_model_fits(x=x, many=True)
-        generate_detailed_graf(out_dir, file, observation, (x, y), model_fits, noise_fits)
+        #generate_detailed_graf(out_dir, file, observation, (x, y), model_fits, noise_fits)
 
 
 
